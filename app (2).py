@@ -68,7 +68,6 @@ def scrape_company_metadata(url):
                 meta_desc = tag.get("content", "").strip()
                 break
 
-        # Fallbacks
         h1 = soup.find("h1")
         first_p = soup.find("p")
         extra = ""
@@ -147,17 +146,11 @@ Context:
 
 Instructions:
 1. Assume the company is a B2B company.
-2. If a website was provided, refer to tech stack categories (e.g., 'CRM', 'ticketing system') rather than specific tools.
-3. If no website is provided or parsing failed, base platform assumptions on company stage:
-   - CRM: Use Attio for Seed–Series B; Salesforce for Growth+.
-   - RevOps Tools: Include Pylon.ai for Seed–Series B. Add Clari and Gong for B+.
-   - Customer Success: Use Vitally or Gainsight depending on stage.
-   - Support: Use Intercom or Zendesk AI depending on stage.
-   - All roles should include ramp on these tools as part of onboarding.
+2. {"Refer to tech stack categories only (e.g., 'CRM', 'ticketing system', 'marketing automation') and avoid naming specific tools or vendors." if generic_stack else "If no website is provided or parsing failed, base platform assumptions on company stage:\n- CRM: Use Attio for Seed–Series B; Salesforce for Growth+.\n- RevOps Tools: Include Pylon.ai for Seed–Series B. Add Clari and Gong for B+.\n- Customer Success: Use Vitally or Gainsight depending on stage.\n- Support: Use Intercom or Zendesk AI depending on stage.\n- All roles should include ramp on these tools as part of onboarding."}
 
-4. Generate a 30/60/90-day onboarding plan broken into 3 phases.
-5. Each phase should be structured by weekly themes.
-6. For each week, include:
+3. Generate a 30/60/90-day onboarding plan broken into 3 phases.
+4. Each phase should be structured by weekly themes.
+5. For each week, include:
    - 📚 Learning objectives
    - ✅ Milestone checklist
    - 🚩 One red flag (if milestone is not met)
