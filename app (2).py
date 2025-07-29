@@ -1,3 +1,4 @@
+
 import streamlit as st
 import openai
 import os
@@ -7,26 +8,63 @@ st.set_page_config(page_title="Onboarding Plan Generator", page_icon="📅", lay
 
 # --- Title ---
 st.title("📅 AI-Powered Onboarding Plan Generator")
-st.write("Generate a 30/60/90-day onboarding plan with weekly themes, milestones, red flags, and coaching guidance.")
+st.write("Generate a customized 30/60/90-day onboarding plan based on role, context, and best practices.")
 
 # --- OpenAI API Key Setup ---
-openai_api_key = os.getenv("OPENAI_API_KEY")  # Allow loading from environment variable
+openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     with st.sidebar:
         st.header("🔑 API Key Setup")
         openai_api_key = st.text_input("Enter your OpenAI API key", type="password")
-        st.markdown("Don't have one? Get it [here](https://platform.openai.com/account/api-keys).")
+
+# --- Role Presets ---
+st.subheader("🎛️ Guided Mode: Choose a Role Preset or Customize")
+
+role_presets = {
+    "Entry-level Customer Success Manager": {
+        "seniority": "Individual Contributor",
+        "function": "Customer Success",
+        "priorities": "Ramp on product and support processes, begin managing 3–5 accounts, build strong client relationships",
+        "constraints": "Lean documentation, evolving customer playbooks"
+    },
+    "Mid-level RevOps Manager": {
+        "seniority": "Manager",
+        "function": "Revenue Operations",
+        "priorities": "Identify process gaps, improve forecast accuracy, support sales onboarding",
+        "constraints": "Limited analytics tooling, unclear historical pipeline hygiene"
+    },
+    "Senior Support Lead": {
+        "seniority": "Manager",
+        "function": "Support",
+        "priorities": "Improve ticket triage, mentor junior team, introduce SLA tracking",
+        "constraints": "Legacy systems, informal escalation protocols"
+    },
+    "Executive Sales Leader": {
+        "seniority": "Executive",
+        "function": "Sales",
+        "priorities": "Revamp pipeline strategy, coach managers, increase close rates",
+        "constraints": "Dispersed team, inconsistent pipeline reviews"
+    },
+    "Custom (enter manually)": {
+        "seniority": "",
+        "function": "",
+        "priorities": "",
+        "constraints": ""
+    }
+}
+
+preset_choice = st.selectbox("Select a role to prefill context:", list(role_presets.keys()))
+preset = role_presets[preset_choice]
 
 # --- Main Form ---
 with st.form("onboarding_form"):
-    role = st.text_input("🎯 Role", placeholder="e.g. Customer Success Manager")
-    seniority = st.selectbox("📈 Seniority Level", ["Individual Contributor", "Manager", "Executive"])
-    function = st.selectbox("🛠️ Functional Area", ["Customer Success", "Revenue Operations", "Support", "Sales", "Other"])
+    role = st.text_input("🎯 Role", value=preset_choice if preset_choice != "Custom (enter manually)" else "")
+    seniority = st.selectbox("📈 Seniority Level", ["Individual Contributor", "Manager", "Executive"], index=["Individual Contributor", "Manager", "Executive"].index(preset["seniority"]) if preset["seniority"] else 0)
+    function = st.selectbox("🛠️ Functional Area", ["Customer Success", "Revenue Operations", "Support", "Sales", "Other"], index=["Customer Success", "Revenue Operations", "Support", "Sales", "Other"].index(preset["function"]) if preset["function"] else 0)
     team_size = st.number_input("👥 Team Size", min_value=1, value=5)
     is_customer_facing = st.checkbox("🎧 Is this a customer-facing role?", value=True)
-    company_stage = st.selectbox("🏢 Company Stage", ["Seed", "Series A", "Series B", "Growth", "Enterprise"])
-    manager_priorities = st.text_area("📌 Manager's Top Priorities", placeholder="e.g. Build customer relationships, improve onboarding process")
-    known_constraints = st.text_area("⚠️ Known Constraints", placeholder="e.g. Limited documentation, complex product")
+    manager_priorities = st.text_area("📌 Manager's Top Priorities", value=preset["priorities"])
+    known_constraints = st.text_area("⚠️ Known Constraints", value=preset["constraints"])
 
     submitted = st.form_submit_button("Generate Plan")
 
