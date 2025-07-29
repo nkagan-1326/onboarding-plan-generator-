@@ -1,170 +1,136 @@
-
 import streamlit as st
-from openai import OpenAI
-from fpdf import FPDF
-import requests
-from bs4 import BeautifulSoup
+import openai
+import os
 
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Onboarding Plan Generator", layout="wide")
-st.title("📋 AI-Powered Onboarding Plan Generator")
+# --- Streamlit Page Configuration ---
+st.set_page_config(page_title="Onboarding Plan Generator", page_icon="📅", layout="centered")
 
-# --- SIDEBAR: API Key ---
-with st.sidebar:
-    openai_api_key = st.text_input("🔐 Enter your OpenAI API Key", type="password")
-    if not openai_api_key:
-        st.warning("Please enter your OpenAI API key to continue.")
+# --- Title ---
+st.title("📅 AI-Powered Onboarding Plan Generator")
+st.write("Generate a role-specific, B2B onboarding plan with weekly milestones, red flags, and coaching guidance — all tailored by company stage and tech stack.")
 
-# --- ROLE PRESETS ---
+# --- OpenAI API Key Setup ---
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    with st.sidebar:
+        st.header("🔑 API Key Setup")
+        openai_api_key = st.text_input("Enter your OpenAI API key", type="password")
+
+# --- Role Presets ---
+st.subheader("🎛️ Guided Mode: Choose a Role Preset or Customize")
+
 role_presets = {
     "Entry-level Customer Success Manager": {
-        "role": "Entry-level Customer Success Manager",
-        "seniority_level": "Individual Contributor",
-        "functional_area": "Customer Success",
-        "company_size": "1–25",
-        "company_stage": "Seed",
-        "team_size": 5,
-        "is_customer_facing": True,
-        "manager_priorities": "Ramp on product, support processes, and client comms. Begin managing 3–5 accounts by Week 4.",
-        "known_constraints": "Limited documentation, AI tools not yet fully adopted"
+        "seniority": "Individual Contributor",
+        "function": "Customer Success",
+        "priorities": "Ramp on product, support processes, and client comms. Begin managing 3–5 accounts by Week 4.",
+        "constraints": "Limited documentation, AI tools not yet fully adopted"
     },
-    "Senior Sales Executive": {
-        "role": "Senior Sales Executive",
-        "seniority_level": "Executive",
-        "functional_area": "Sales",
-        "company_size": "26–100",
-        "company_stage": "Series B",
-        "team_size": 3,
-        "is_customer_facing": True,
-        "manager_priorities": "Drive pipeline, close initial strategic accounts, build repeatable sales process.",
-        "known_constraints": "Early stage ICP, basic CRM setup, SDR support still scaling"
+    "Mid-level RevOps Manager": {
+        "seniority": "Manager",
+        "function": "Revenue Operations",
+        "priorities": "Optimize GTM data flow, improve forecast accuracy, support sales enablement.",
+        "constraints": "Siloed tooling, growing demand for dashboarding"
     },
-    "RevOps Lead": {
-        "role": "Revenue Operations Lead",
-        "seniority_level": "Manager",
-        "functional_area": "RevOps",
-        "company_size": "26–100",
-        "company_stage": "Series A",
-        "team_size": 2,
-        "is_customer_facing": False,
-        "manager_priorities": "Build scalable systems for reporting, forecasting, and pipeline management.",
-        "known_constraints": "Siloed data, no unified tech stack yet"
+    "Sales Executive": {
+        "seniority": "Executive",
+        "function": "Sales",
+        "priorities": "Revamp pipeline strategy, coach managers, increase close rates",
+        "constraints": "Dispersed team, inconsistent pipeline reviews"
+    },
+    "Custom (enter manually)": {
+        "seniority": "",
+        "function": "",
+        "priorities": "",
+        "constraints": ""
     }
 }
 
-# --- TECH STACK LOGIC ---
-ai_tech_stack = {
-    "Seed": {"CRM": "Attio", "CS Platform": "Pylon.ai", "Enablement": "Notion", "Ticketing": "Zendesk"},
-    "Series A": {"CRM": "HubSpot", "CS Platform": "Gainsight Essentials", "Enablement": "Gong", "Ticketing": "Freshdesk"},
-    "Series B": {"CRM": "Salesforce", "CS Platform": "Catalyst", "Enablement": "Gong", "Ticketing": "Zendesk"}
-}
+preset_choice = st.selectbox("Select a role to prefill context:", list(role_presets.keys()))
+preset = role_presets[preset_choice]
 
-# --- Helper: Enrichment ---
-def extract_website_info(url):
-    try:
-        resp = requests.get(url, timeout=5)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        title = soup.title.string if soup.title else ""
-        metas = soup.find_all("meta")
-        description = " ".join([m.get("content", "") for m in metas if m.get("name") in ["description", "og:description"]])
-        return f"{title}. {description}".strip()
-    except Exception:
-        return ""
-
-# --- Helper: Prompt Builder ---
-def build_prompt(context):
-    tools = ai_tech_stack.get(context["company_stage"], {})
-    tools_text = (
-        "Use generic labels (e.g. CRM, CS Platform) instead of tool names."
-        if context["enriched"]
-        else "Assume tools like: " + ", ".join([f"{k}: {v}" for k, v in tools.items()])
-    )
-    return f"""
-You are an expert in onboarding design for B2B companies. Create a structured 90-day onboarding plan.
-
-Role: {context["role"]}
-Seniority: {context["seniority_level"]}
-Function: {context["functional_area"]}
-Stage: {context["company_stage"]}, Size: {context["company_size"]}, Team Size: {context["team_size"]}
-Customer-Facing: {"Yes" if context["is_customer_facing"] else "No"}
-Manager Priorities: {context["manager_priorities"]}
-Constraints: {context["known_constraints"]}
-{f"Company Website Info: {context['website_info']}" if context["enriched"] else ""}
-{tools_text}
-
-Format:
-- Days 1–30: Learning Objectives, Milestones, Coaching Guidance, Tools
-- Days 31–60: same
-- Days 61–90: same
-- Red Flags & Remediation
-Use markdown headers and bullet points.
-"""
-
-# --- PDF Export ---
-def export_pdf(text):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    for line in text.split("\n"):
-        pdf.multi_cell(0, 10, line)
-    path = "/mnt/data/onboarding_plan.pdf"
-    pdf.output(path)
-    return path
-
-# --- FORM UI ---
-preset_choice = st.selectbox("🎯 Choose Role Preset (or Customize)", [""] + list(role_presets.keys()))
-preset = role_presets.get(preset_choice, {})
-
-with st.form("form"):
-    col1, col2 = st.columns(2)
-    with col1:
-        role = st.text_input("Role", value=preset.get("role", ""))
-        seniority = st.selectbox("Seniority", ["Individual Contributor", "Manager", "Executive"], index=["Individual Contributor", "Manager", "Executive"].index(preset.get("seniority_level", "Individual Contributor")))
-        function = st.selectbox("Function", ["Sales", "Marketing", "Customer Success", "RevOps", "Engineering"], index=["Sales", "Marketing", "Customer Success", "RevOps", "Engineering"].index(preset.get("functional_area", "Customer Success")))
-        company_stage = st.selectbox("Stage", ["Seed", "Series A", "Series B"], index=["Seed", "Series A", "Series B"].index(preset.get("company_stage", "Seed")))
-    with col2:
-        company_size = st.selectbox("Size", ["1–25", "26–100", "101–500", "500+"], index=["1–25", "26–100", "101–500", "500+"].index(preset.get("company_size", "1–25")))
-        team_size = st.number_input("Team Size", min_value=1, value=preset.get("team_size", 5))
-        is_customer_facing = st.checkbox("Customer-Facing", value=preset.get("is_customer_facing", False))
-        website = st.text_input("Company Website (optional)", "")
-
-    manager_priorities = st.text_area("📌 Manager's Top Priorities", value=preset.get("manager_priorities", "Ramp on product, close deals, build pipeline."))
-    known_constraints = st.text_area("⚠️ Known Constraints", value=preset.get("known_constraints", "Limited documentation, AI not adopted."))
+# --- Main Form ---
+with st.form("onboarding_form"):
+    company_website = st.text_input("🌐 Company Website (optional)", placeholder="https://example.com")
+    role = st.text_input("🎯 Role", value=preset_choice if preset_choice != "Custom (enter manually)" else "")
+    seniority = st.selectbox("📈 Seniority Level", ["Individual Contributor", "Manager", "Executive"], index=["Individual Contributor", "Manager", "Executive"].index(preset["seniority"]) if preset["seniority"] else 0)
+    function = st.selectbox("🛠️ Functional Area", ["Customer Success", "Revenue Operations", "Support", "Sales", "Other"], index=["Customer Success", "Revenue Operations", "Support", "Sales", "Other"].index(preset["function"]) if preset["function"] else 0)
+    company_size = st.selectbox("🏢 Company Size", ["1–25", "26–100", "101–500", "501–1000", "1000+"])
+    company_stage = st.selectbox("🚀 Company Stage", ["Seed", "Series A", "Series B", "Growth", "Enterprise"])
+    team_size = st.number_input("👥 Team Size", min_value=1, value=5)
+    is_customer_facing = st.checkbox("🎧 Is this a customer-facing role?", value=True)
+    manager_priorities = st.text_area("📌 Manager's Top Priorities", value=preset["priorities"])
+    known_constraints = st.text_area("⚠️ Known Constraints", value=preset["constraints"])
 
     submitted = st.form_submit_button("Generate Plan")
 
-# --- ON SUBMIT ---
-if submitted and openai_api_key:
-    client = OpenAI(api_key=openai_api_key)
+# --- Generate Plan ---
+if submitted:
+    if not openai_api_key:
+        st.error("Please enter your OpenAI API key in the sidebar or set it as an environment variable.")
+    elif not role or not manager_priorities:
+        st.error("Please fill in at least the role and manager priorities.")
+    else:
+        st.info("Generating your onboarding plan...")
 
-    website_info = extract_website_info(website) if website else ""
-    enriched = bool(website_info)
+        try:
+            client = openai.OpenAI(api_key=openai_api_key)
 
-    prompt = build_prompt({
-        "role": role,
-        "seniority_level": seniority,
-        "functional_area": function,
-        "company_stage": company_stage,
-        "company_size": company_size,
-        "team_size": team_size,
-        "is_customer_facing": is_customer_facing,
-        "manager_priorities": manager_priorities,
-        "known_constraints": known_constraints,
-        "website_info": website_info,
-        "enriched": enriched
-    })
+            prompt = f"""
+You are an experienced onboarding architect designing a high-impact plan for a new hire at a B2B company.
 
-    try:
-        with st.spinner("Generating onboarding plan..."):
+Context:
+- Role: {role}
+- Seniority: {seniority}
+- Function: {function}
+- Company Size: {company_size}
+- Company Stage: {company_stage}
+- Team Size: {team_size}
+- Customer-Facing: {"Yes" if is_customer_facing else "No"}
+- Manager's Top Priorities: {manager_priorities}
+- Known Constraints: {known_constraints}
+
+Instructions:
+1. Assume the company is a B2B company.
+2. Base platform assumptions on company stage:
+   - CRM: Use Attio for Seed–Series B; Salesforce for Growth+.
+   - RevOps Tools: Include Pylon.ai for Seed–Series B. Add Clari and Gong for B+.
+   - Customer Success: Use Vitally or Gainsight depending on stage.
+   - Support: Use Intercom or Zendesk AI depending on stage.
+   - All roles should include ramp on these tools as part of onboarding.
+
+3. Generate a 30/60/90-day onboarding plan broken into 3 phases.
+4. Each phase should be structured by weekly themes.
+5. For each week, include:
+   - 📚 Learning objectives
+   - ✅ Milestone checklist
+   - 🚩 One red flag (if milestone is not met)
+   - 🧭 Coaching notes for the manager
+
+Start with a summary paragraph explaining the onboarding design, considering the company size, stage, and role. Adjust pacing:
+- Smaller companies (<100) should ramp quickly and broadly.
+- Larger companies (>500) should allow structured immersion.
+
+Ensure the full 12-week plan is generated, with late-phase weeks focusing on mastery, strategy, or mentoring.
+
+Tailor language to the function and avoid generic filler. Incorporate the expected tools and systems as part of learning and milestones.
+
+Format using markdown.
+"""
+
             response = client.chat.completions.create(
                 model="gpt-4",
-                messages=[{"role": "user", "content": prompt}]
+                messages=[
+                    {"role": "system", "content": "You are a strategic onboarding expert."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=2500
             )
-            plan = response.choices[0].message.content
-            st.markdown(plan)
-            st.download_button("⬇️ Download Markdown", plan, file_name="onboarding_plan.md")
-            pdf_path = export_pdf(plan)
-            with open(pdf_path, "rb") as f:
-                st.download_button("📄 Download PDF", f, file_name="onboarding_plan.pdf")
-    except Exception as e:
-        st.error(f"❌ OpenAI Error: {e}")
+
+            output = response.choices[0].message.content
+            st.markdown("### 🧾 Your 30/60/90-Day Onboarding Plan")
+            st.markdown(output)
+
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
