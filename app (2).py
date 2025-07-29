@@ -1,4 +1,3 @@
-
 import streamlit as st
 import openai
 import os
@@ -52,6 +51,7 @@ preset = role_presets[preset_choice]
 
 # --- Main Form ---
 with st.form("onboarding_form"):
+    company_website = st.text_input("🌐 Company Website (optional)", placeholder="https://example.com")
     role = st.text_input("🎯 Role", value=preset_choice if preset_choice != "Custom (enter manually)" else "")
     seniority = st.selectbox("📈 Seniority Level", ["Individual Contributor", "Manager", "Executive"], index=["Individual Contributor", "Manager", "Executive"].index(preset["seniority"]) if preset["seniority"] else 0)
     function = st.selectbox("🛠️ Functional Area", ["Customer Success", "Revenue Operations", "Support", "Sales", "Other"], index=["Customer Success", "Revenue Operations", "Support", "Sales", "Other"].index(preset["function"]) if preset["function"] else 0)
@@ -62,10 +62,7 @@ with st.form("onboarding_form"):
     manager_priorities = st.text_area("📌 Manager's Top Priorities", value=preset["priorities"])
     known_constraints = st.text_area("⚠️ Known Constraints", value=preset["constraints"])
 
-
-    company_website = st.text_input("🌐 Company Website (optional)", placeholder="https://example.com")
     submitted = st.form_submit_button("Generate Plan")
-
 
 # --- Generate Plan ---
 if submitted:
