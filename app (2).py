@@ -1,3 +1,4 @@
+
 import streamlit as st
 import openai
 import os
@@ -9,11 +10,13 @@ st.set_page_config(page_title="Onboarding Plan Generator", page_icon="📅", lay
 st.title("📅 AI-Powered Onboarding Plan Generator")
 st.write("Generate a tailored 30/60/90-day onboarding plan based on your team and role context.")
 
-# --- Sidebar: OpenAI API Key ---
-with st.sidebar:
-    st.header("🔑 API Key Setup")
-    openai_api_key = st.text_input("Enter your OpenAI API key", type="password")
-    st.markdown("Don't have one? Get it [here](https://platform.openai.com/account/api-keys).")
+# --- OpenAI API Key Setup ---
+openai_api_key = os.getenv("OPENAI_API_KEY")  # Allow loading from environment variable
+if not openai_api_key:
+    with st.sidebar:
+        st.header("🔑 API Key Setup")
+        openai_api_key = st.text_input("Enter your OpenAI API key", type="password")
+        st.markdown("Don't have one? Get it [here](https://platform.openai.com/account/api-keys).")
 
 # --- Main Form ---
 with st.form("onboarding_form"):
@@ -28,7 +31,7 @@ with st.form("onboarding_form"):
 # --- Generate Plan ---
 if submitted:
     if not openai_api_key:
-        st.error("Please enter your OpenAI API key in the sidebar.")
+        st.error("Please enter your OpenAI API key in the sidebar or set it as an environment variable.")
     elif not role or not manager_priorities:
         st.error("Please fill in at least the role and manager priorities.")
     else:
@@ -38,15 +41,23 @@ if submitted:
             client = openai.OpenAI(api_key=openai_api_key)
 
             prompt = f"""
-You are an experienced operations leader designing onboarding plans. Given the context below, generate a detailed 30/60/90-day onboarding plan for a new hire.
+You are a seasoned operations leader and onboarding designer creating a practical, high-impact onboarding plan.
 
-Role: {role}
-Team Size: {team_size}
-Company Stage: {company_stage}
-Manager's Top Priorities: {manager_priorities}
-Known Constraints: {known_constraints}
+Here’s the new hire context:
+- Role: {role}
+- Team Size: {team_size}
+- Company Stage: {company_stage}
+- Manager's Top Priorities: {manager_priorities}
+- Known Constraints: {known_constraints}
 
-Output the plan in markdown format with clear headings for each phase.
+Generate a customized 30/60/90-day plan that:
+- Focuses on clear, measurable goals
+- Includes concrete tasks with examples
+- Reflects the company’s stage and team size
+- Avoids generic advice
+- Uses markdown with headers and bullet points
+
+Group activities by each 30-day phase, and tailor it to the realities of a lean team with limited resources.
 """
 
             response = client.chat.completions.create(
