@@ -66,6 +66,7 @@ with st.form("onboarding_form"):
     manager_priorities = st.text_area("📌 Manager's Top Priorities", value=preset["priorities"])
     known_constraints = st.text_area("⚠️ Known Constraints", value=preset["constraints"])
 
+    company_stage = st.selectbox("🏢 Company Stage", ["Seed", "Series A", "Series B", "Growth", "Enterprise"])
     submitted = st.form_submit_button("Generate Plan")
 
 # --- Generate Plan ---
