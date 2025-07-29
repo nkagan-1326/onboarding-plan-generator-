@@ -8,7 +8,7 @@ st.set_page_config(page_title="Onboarding Plan Generator", page_icon="📅", lay
 
 # --- Title ---
 st.title("📅 AI-Powered Onboarding Plan Generator")
-st.write("Generate a role-specific, pace-adjusted 30/60/90-day onboarding plan with weekly themes, milestones, red flags, and coaching guidance.")
+st.write("Generate a role-specific, B2B onboarding plan with weekly milestones, red flags, and coaching guidance — all tailored by company stage and tech stack.")
 
 # --- OpenAI API Key Setup ---
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -24,22 +24,16 @@ role_presets = {
     "Entry-level Customer Success Manager": {
         "seniority": "Individual Contributor",
         "function": "Customer Success",
-        "priorities": "Ramp on product and support processes, begin managing 3–5 accounts, build strong client relationships",
-        "constraints": "Lean documentation, evolving customer playbooks"
+        "priorities": "Ramp on product, support processes, and client comms. Begin managing 3–5 accounts by Week 4.",
+        "constraints": "Limited documentation, AI tools not yet fully adopted"
     },
     "Mid-level RevOps Manager": {
         "seniority": "Manager",
         "function": "Revenue Operations",
-        "priorities": "Identify process gaps, improve forecast accuracy, support sales onboarding",
-        "constraints": "Limited analytics tooling, unclear historical pipeline hygiene"
+        "priorities": "Optimize GTM data flow, improve forecast accuracy, support sales enablement.",
+        "constraints": "Siloed tooling, growing demand for dashboarding"
     },
-    "Senior Support Lead": {
-        "seniority": "Manager",
-        "function": "Support",
-        "priorities": "Improve ticket triage, mentor junior team, introduce SLA tracking",
-        "constraints": "Legacy systems, informal escalation protocols"
-    },
-    "Executive Sales Leader": {
+    "Sales Executive": {
         "seniority": "Executive",
         "function": "Sales",
         "priorities": "Revamp pipeline strategy, coach managers, increase close rates",
@@ -83,7 +77,7 @@ if submitted:
             client = openai.OpenAI(api_key=openai_api_key)
 
             prompt = f"""
-You are an experienced onboarding architect designing a high-impact plan for a new hire.
+You are an experienced onboarding architect designing a high-impact plan for a new hire at a B2B company.
 
 Context:
 - Role: {role}
@@ -97,24 +91,31 @@ Context:
 - Known Constraints: {known_constraints}
 
 Instructions:
-1. Generate a 30/60/90-day onboarding plan broken into 3 phases.
-2. Each phase should be structured by weekly themes.
-3. For each week, include:
+1. Assume the company is a B2B company.
+2. Base platform assumptions on company stage:
+   - CRM: Use Attio for Seed–Series B; Salesforce for Growth+.
+   - RevOps Tools: Include Pylon.ai for Seed–Series B. Add Clari and Gong for B+.
+   - Customer Success: Use Vitally or Gainsight depending on stage.
+   - Support: Use Intercom or Zendesk AI depending on stage.
+   - All roles should include ramp on these tools as part of onboarding.
+
+3. Generate a 30/60/90-day onboarding plan broken into 3 phases.
+4. Each phase should be structured by weekly themes.
+5. For each week, include:
    - 📚 Learning objectives
    - ✅ Milestone checklist
    - 🚩 One red flag (if milestone is not met)
    - 🧭 Coaching notes for the manager
 
-Start the output with a brief summary paragraph contextualizing the onboarding design based on the company size and stage.
+Start with a summary paragraph explaining the onboarding design, considering the company size, stage, and role. Adjust pacing:
+- Smaller companies (<100) should ramp quickly and broadly.
+- Larger companies (>500) should allow structured immersion.
 
-Adjust the plan pacing and expectations accordingly:
-- Smaller companies (<100 employees) should ramp faster, introduce broader exposure early, and expect early ownership.
-- Larger companies (>500) may stretch onboarding timelines, introduce structured immersion, and defer ownership.
-- Consider resource availability, documentation maturity, and typical enablement practices for each size/stage.
+Ensure the full 12-week plan is generated, with late-phase weeks focusing on mastery, strategy, or mentoring.
 
-Generate the full 90-day plan across all 12 weeks, even if early independence is achieved. Later weeks can focus on deepening expertise, mentoring others, or contributing strategically.
+Tailor language to the function and avoid generic filler. Incorporate the expected tools and systems as part of learning and milestones.
 
-Avoid generic filler. Tailor the outputs to the context. Format in markdown.
+Format using markdown.
 """
 
             response = client.chat.completions.create(
