@@ -50,18 +50,22 @@ Output the plan in markdown format with clear headings for each phase.
 """
 
         try:
-            response = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "You are a strategic onboarding expert."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=1000
-            )
-            output = response["choices"][0]["message"]["content"]
-            st.markdown("### 🧾 Your 30/60/90-Day Onboarding Plan")
-            st.markdown(output)
+            client = openai.OpenAI(api_key=openai_api_key)
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[
+        {"role": "system", "content": "You are a strategic onboarding expert."},
+        {"role": "user", "content": prompt}
+    ],
+    temperature=0.7,
+    max_tokens=1000
+)
+
+output = response.choices[0].message.content
+st.markdown("### 🧾 Your 30/60/90-Day Onboarding Plan")
+st.markdown(output)
+
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
