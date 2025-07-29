@@ -1,9 +1,8 @@
-
 import streamlit as st
 import openai
 import os
 
-# --- Configuration ---
+# --- Streamlit Page Configuration ---
 st.set_page_config(page_title="Onboarding Plan Generator", page_icon="📅", layout="centered")
 
 # --- Title ---
@@ -35,9 +34,10 @@ if submitted:
     else:
         st.info("Generating your onboarding plan...")
 
-        openai.api_key = openai_api_key
+        try:
+            client = openai.OpenAI(api_key=openai_api_key)
 
-        prompt = f"""
+            prompt = f"""
 You are an experienced operations leader designing onboarding plans. Given the context below, generate a detailed 30/60/90-day onboarding plan for a new hire.
 
 Role: {role}
@@ -49,25 +49,19 @@ Known Constraints: {known_constraints}
 Output the plan in markdown format with clear headings for each phase.
 """
 
-        try:
-            client = openai.OpenAI(api_key=openai_api_key)
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a strategic onboarding expert."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1000
+            )
 
-response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[
-        {"role": "system", "content": "You are a strategic onboarding expert."},
-        {"role": "user", "content": prompt}
-    ],
-    temperature=0.7,
-    max_tokens=1000
-)
-
-output = response.choices[0].message.content
-st.markdown("### 🧾 Your 30/60/90-Day Onboarding Plan")
-st.markdown(output)
-
-except Exception as e:
-    st.error(f"Something went wrong: {e}")
+            output = response.choices[0].message.content
+            st.markdown("### 🧾 Your 30/60/90-Day Onboarding Plan")
+            st.markdown(output)
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
