@@ -1,6 +1,5 @@
 openai>=1.0.0
 streamlit
 fpdf
-beautifulsoup4
 requests
-markdown
+beautifulsoup4
