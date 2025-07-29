@@ -1,11 +1,13 @@
+
 import streamlit as st
 import openai
 import os
+import requests
+from bs4 import BeautifulSoup
 
 # --- Streamlit Page Configuration ---
 st.set_page_config(page_title="Onboarding Plan Generator", page_icon="📅", layout="centered")
 
-# --- Title ---
 st.title("📅 AI-Powered Onboarding Plan Generator")
 st.write("Generate a role-specific, B2B onboarding plan with weekly milestones, red flags, and coaching guidance — all tailored by company stage and tech stack.")
 
@@ -49,6 +51,31 @@ role_presets = {
 preset_choice = st.selectbox("Select a role to prefill context:", list(role_presets.keys()))
 preset = role_presets[preset_choice]
 
+# --- Website enrichment ---
+def scrape_company_metadata(url):
+    try:
+        if not url.startswith("http"):
+            url = "https://" + url
+        response = requests.get(url, timeout=8)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+        title = soup.title.string.strip() if soup.title else ""
+        description = ""
+        for tag in soup.find_all("meta"):
+            if tag.get("name", "").lower() == "description":
+                description = tag.get("content", "").strip()
+        return {
+            "success": True,
+            "title": title,
+            "description": description,
+            "product": url.split("//")[-1].split("/")[0],
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 # --- Main Form ---
 with st.form("onboarding_form"):
     company_website = st.text_input("🌐 Company Website (optional)", placeholder="https://example.com")
@@ -73,6 +100,15 @@ if submitted:
     else:
         st.info("Generating your onboarding plan...")
 
+        website_metadata = None
+        generic_stack = False
+        if company_website:
+            website_metadata = scrape_company_metadata(company_website)
+            if not website_metadata["success"]:
+                st.warning("We couldn't access or parse that website. Tech stack will default to assumptions.")
+            else:
+                generic_stack = True
+
         try:
             client = openai.OpenAI(api_key=openai_api_key)
 
@@ -89,19 +125,21 @@ Context:
 - Customer-Facing: {"Yes" if is_customer_facing else "No"}
 - Manager's Top Priorities: {manager_priorities}
 - Known Constraints: {known_constraints}
+{"- Company Website Metadata: " + website_metadata['description'] + " (" + website_metadata['product'] + ")" if website_metadata and website_metadata['success'] else ""}
 
 Instructions:
 1. Assume the company is a B2B company.
-2. Base platform assumptions on company stage:
+2. If a website was provided, refer to tech stack categories (e.g., 'CRM', 'ticketing system') rather than specific tools.
+3. If no website is provided or parsing failed, base platform assumptions on company stage:
    - CRM: Use Attio for Seed–Series B; Salesforce for Growth+.
    - RevOps Tools: Include Pylon.ai for Seed–Series B. Add Clari and Gong for B+.
    - Customer Success: Use Vitally or Gainsight depending on stage.
    - Support: Use Intercom or Zendesk AI depending on stage.
    - All roles should include ramp on these tools as part of onboarding.
 
-3. Generate a 30/60/90-day onboarding plan broken into 3 phases.
-4. Each phase should be structured by weekly themes.
-5. For each week, include:
+4. Generate a 30/60/90-day onboarding plan broken into 3 phases.
+5. Each phase should be structured by weekly themes.
+6. For each week, include:
    - 📚 Learning objectives
    - ✅ Milestone checklist
    - 🚩 One red flag (if milestone is not met)
@@ -111,11 +149,7 @@ Start with a summary paragraph explaining the onboarding design, considering the
 - Smaller companies (<100) should ramp quickly and broadly.
 - Larger companies (>500) should allow structured immersion.
 
-Ensure the full 12-week plan is generated, with late-phase weeks focusing on mastery, strategy, or mentoring.
-
-Tailor language to the function and avoid generic filler. Incorporate the expected tools and systems as part of learning and milestones.
-
-Format using markdown.
+Use relevant language based on company metadata if available. Format the full plan using markdown.
 """
 
             response = client.chat.completions.create(
