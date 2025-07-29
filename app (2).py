@@ -56,20 +56,37 @@ def scrape_company_metadata(url):
     try:
         if not url.startswith("http"):
             url = "https://" + url
-        response = requests.get(url, timeout=8)
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
+
         soup = BeautifulSoup(response.text, "html.parser")
         title = soup.title.string.strip() if soup.title else ""
-        description = ""
+        meta_desc = ""
         for tag in soup.find_all("meta"):
             if tag.get("name", "").lower() == "description":
-                description = tag.get("content", "").strip()
+                meta_desc = tag.get("content", "").strip()
+                break
+
+        # Fallbacks
+        h1 = soup.find("h1")
+        first_p = soup.find("p")
+        extra = ""
+        if not meta_desc and h1:
+            extra = h1.get_text().strip()
+        elif not meta_desc and first_p:
+            extra = first_p.get_text().strip()
+
+        content_snippet = meta_desc or extra or "No readable description found."
+
         return {
             "success": True,
             "title": title,
-            "description": description,
+            "description": content_snippet,
             "product": url.split("//")[-1].split("/")[0],
+            "raw": response.text[:300]
         }
+
     except Exception as e:
         return {
             "success": False,
@@ -105,9 +122,10 @@ if submitted:
         if company_website:
             website_metadata = scrape_company_metadata(company_website)
             if not website_metadata["success"]:
-                st.warning("We couldn't access or parse that website. Tech stack will default to assumptions.")
+                st.warning(f"We couldn't access or parse that website. Reason: {website_metadata['error']}")
             else:
                 generic_stack = True
+                st.success(f"Website description: {website_metadata['description'][:200]}")
 
         try:
             client = openai.OpenAI(api_key=openai_api_key)
