@@ -8,7 +8,7 @@ st.set_page_config(page_title="Onboarding Plan Generator", page_icon="📅", lay
 
 # --- Title ---
 st.title("📅 AI-Powered Onboarding Plan Generator")
-st.write("Generate a tailored 30/60/90-day onboarding plan based on your team and role context.")
+st.write("Generate a tailored 30/60/90-day onboarding plan including tasks, milestones, red flags, and coaching notes.")
 
 # --- OpenAI API Key Setup ---
 openai_api_key = os.getenv("OPENAI_API_KEY")  # Allow loading from environment variable
@@ -21,9 +21,12 @@ if not openai_api_key:
 # --- Main Form ---
 with st.form("onboarding_form"):
     role = st.text_input("🎯 Role", placeholder="e.g. Customer Success Manager")
+    seniority = st.selectbox("📈 Seniority Level", ["Individual Contributor", "Manager", "Executive"])
+    function = st.selectbox("🛠️ Functional Area", ["Customer Success", "Revenue Operations", "Support", "Sales", "Other"])
     team_size = st.number_input("👥 Team Size", min_value=1, value=5)
+    is_customer_facing = st.checkbox("🎧 Is this a customer-facing role?", value=True)
     company_stage = st.selectbox("🏢 Company Stage", ["Seed", "Series A", "Series B", "Growth", "Enterprise"])
-    manager_priorities = st.text_area("📌 Manager's Top Priorities", placeholder="e.g. Build client relationships, improve onboarding process")
+    manager_priorities = st.text_area("📌 Manager's Top Priorities", placeholder="e.g. Build customer relationships, improve onboarding process")
     known_constraints = st.text_area("⚠️ Known Constraints", placeholder="e.g. Limited documentation, complex product")
 
     submitted = st.form_submit_button("Generate Plan")
@@ -41,23 +44,26 @@ if submitted:
             client = openai.OpenAI(api_key=openai_api_key)
 
             prompt = f"""
-You are a seasoned operations leader and onboarding designer creating a practical, high-impact onboarding plan.
+You are a seasoned operations leader and onboarding designer. Based on the context below, generate a high-impact onboarding plan.
 
-Here’s the new hire context:
+Context:
 - Role: {role}
+- Seniority: {seniority}
+- Function: {function}
 - Team Size: {team_size}
+- Customer-Facing: {"Yes" if is_customer_facing else "No"}
 - Company Stage: {company_stage}
 - Manager's Top Priorities: {manager_priorities}
 - Known Constraints: {known_constraints}
 
-Generate a customized 30/60/90-day plan that:
-- Focuses on clear, measurable goals
-- Includes concrete tasks with examples
-- Reflects the company’s stage and team size
-- Avoids generic advice
-- Uses markdown with headers and bullet points
+Please output a customized 30/60/90-day onboarding plan with:
+- Markdown headers for each phase
+- Bullet-point task lists
+- ✅ A milestone checklist per phase
+- 🚩 One red flag per phase (if a milestone is missed)
+- 🧭 Coaching notes per phase for the manager: how to support success, what to watch for
 
-Group activities by each 30-day phase, and tailor it to the realities of a lean team with limited resources.
+Avoid generic content. Tailor for a lean, fast-paced team. Ensure realism based on team size and maturity.
 """
 
             response = client.chat.completions.create(
@@ -67,7 +73,7 @@ Group activities by each 30-day phase, and tailor it to the realities of a lean 
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=1000
+                max_tokens=1200
             )
 
             output = response.choices[0].message.content
