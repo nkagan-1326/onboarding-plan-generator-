@@ -1,4 +1,3 @@
-
 import streamlit as st
 import openai
 import os
@@ -8,7 +7,7 @@ st.set_page_config(page_title="Onboarding Plan Generator", page_icon="📅", lay
 
 # --- Title ---
 st.title("📅 AI-Powered Onboarding Plan Generator")
-st.write("Generate a tailored 30/60/90-day onboarding plan including tasks, milestones, red flags, and coaching notes.")
+st.write("Generate a 30/60/90-day onboarding plan with weekly themes, milestones, red flags, and coaching guidance.")
 
 # --- OpenAI API Key Setup ---
 openai_api_key = os.getenv("OPENAI_API_KEY")  # Allow loading from environment variable
@@ -44,7 +43,7 @@ if submitted:
             client = openai.OpenAI(api_key=openai_api_key)
 
             prompt = f"""
-You are a seasoned operations leader and onboarding designer. Based on the context below, generate a high-impact onboarding plan.
+You are an experienced onboarding architect designing a high-impact plan for a new hire.
 
 Context:
 - Role: {role}
@@ -56,14 +55,17 @@ Context:
 - Manager's Top Priorities: {manager_priorities}
 - Known Constraints: {known_constraints}
 
-Please output a customized 30/60/90-day onboarding plan with:
-- Markdown headers for each phase
-- Bullet-point task lists
-- ✅ A milestone checklist per phase
-- 🚩 One red flag per phase (if a milestone is missed)
-- 🧭 Coaching notes per phase for the manager: how to support success, what to watch for
+Your task is to generate a robust onboarding plan over 90 days using the following format and principles:
 
-Avoid generic content. Tailor for a lean, fast-paced team. Ensure realism based on team size and maturity.
+1. Structure the plan into 3 phases: 0–30, 31–60, and 61–90 days.
+2. For each phase, organize the content by **weekly themes** (e.g., tools, product, internal systems, pitch, reporting, cross-functional collaboration).
+3. For each week, include:
+   - 📚 Learning objectives
+   - ✅ Milestone checklist (what should be completed)
+   - 🚩 1 red flag (what's missing if milestones aren't met)
+   - 🧭 Coaching notes for the manager
+
+Incorporate best practices such as gradual complexity, varied formats (live, async, peer-led), and increasing ownership. Do not include specific tool names or proprietary details. Format output in markdown.
 """
 
             response = client.chat.completions.create(
@@ -73,7 +75,7 @@ Avoid generic content. Tailor for a lean, fast-paced team. Ensure realism based 
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=1200
+                max_tokens=1500
             )
 
             output = response.choices[0].message.content
