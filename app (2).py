@@ -8,7 +8,7 @@ st.set_page_config(page_title="Onboarding Plan Generator", page_icon="📅", lay
 
 # --- Title ---
 st.title("📅 AI-Powered Onboarding Plan Generator")
-st.write("Generate a customized 30/60/90-day onboarding plan based on role, context, and best practices.")
+st.write("Generate a role-specific, pace-adjusted 30/60/90-day onboarding plan with weekly themes, milestones, red flags, and coaching guidance.")
 
 # --- OpenAI API Key Setup ---
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -61,12 +61,13 @@ with st.form("onboarding_form"):
     role = st.text_input("🎯 Role", value=preset_choice if preset_choice != "Custom (enter manually)" else "")
     seniority = st.selectbox("📈 Seniority Level", ["Individual Contributor", "Manager", "Executive"], index=["Individual Contributor", "Manager", "Executive"].index(preset["seniority"]) if preset["seniority"] else 0)
     function = st.selectbox("🛠️ Functional Area", ["Customer Success", "Revenue Operations", "Support", "Sales", "Other"], index=["Customer Success", "Revenue Operations", "Support", "Sales", "Other"].index(preset["function"]) if preset["function"] else 0)
+    company_size = st.selectbox("🏢 Company Size", ["1–25", "26–100", "101–500", "501–1000", "1000+"])
+    company_stage = st.selectbox("🚀 Company Stage", ["Seed", "Series A", "Series B", "Growth", "Enterprise"])
     team_size = st.number_input("👥 Team Size", min_value=1, value=5)
     is_customer_facing = st.checkbox("🎧 Is this a customer-facing role?", value=True)
     manager_priorities = st.text_area("📌 Manager's Top Priorities", value=preset["priorities"])
     known_constraints = st.text_area("⚠️ Known Constraints", value=preset["constraints"])
 
-    company_stage = st.selectbox("🏢 Company Stage", ["Seed", "Series A", "Series B", "Growth", "Enterprise"])
     submitted = st.form_submit_button("Generate Plan")
 
 # --- Generate Plan ---
@@ -88,23 +89,32 @@ Context:
 - Role: {role}
 - Seniority: {seniority}
 - Function: {function}
+- Company Size: {company_size}
+- Company Stage: {company_stage}
 - Team Size: {team_size}
 - Customer-Facing: {"Yes" if is_customer_facing else "No"}
-- Company Stage: {company_stage}
 - Manager's Top Priorities: {manager_priorities}
 - Known Constraints: {known_constraints}
 
-Your task is to generate a robust onboarding plan over 90 days using the following format and principles:
-
-1. Structure the plan into 3 phases: 0–30, 31–60, and 61–90 days.
-2. For each phase, organize the content by **weekly themes** (e.g., tools, product, internal systems, pitch, reporting, cross-functional collaboration).
+Instructions:
+1. Generate a 30/60/90-day onboarding plan broken into 3 phases.
+2. Each phase should be structured by weekly themes.
 3. For each week, include:
    - 📚 Learning objectives
-   - ✅ Milestone checklist (what should be completed)
-   - 🚩 1 red flag (what's missing if milestones aren't met)
+   - ✅ Milestone checklist
+   - 🚩 One red flag (if milestone is not met)
    - 🧭 Coaching notes for the manager
 
-Incorporate best practices such as gradual complexity, varied formats (live, async, peer-led), and increasing ownership. Do not include specific tool names or proprietary details. Format output in markdown.
+Start the output with a brief summary paragraph contextualizing the onboarding design based on the company size and stage.
+
+Adjust the plan pacing and expectations accordingly:
+- Smaller companies (<100 employees) should ramp faster, introduce broader exposure early, and expect early ownership.
+- Larger companies (>500) may stretch onboarding timelines, introduce structured immersion, and defer ownership.
+- Consider resource availability, documentation maturity, and typical enablement practices for each size/stage.
+
+Generate the full 90-day plan across all 12 weeks, even if early independence is achieved. Later weeks can focus on deepening expertise, mentoring others, or contributing strategically.
+
+Avoid generic filler. Tailor the outputs to the context. Format in markdown.
 """
 
             response = client.chat.completions.create(
@@ -114,7 +124,7 @@ Incorporate best practices such as gradual complexity, varied formats (live, asy
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=1500
+                max_tokens=2500
             )
 
             output = response.choices[0].message.content
