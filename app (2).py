@@ -328,21 +328,38 @@ Instructions:
    - Seed/Series A: Attio (CRM), Pylon.ai (RevOps), Intercom (Support), Vitally (CS)
    - Series B+: Add Salesforce, Clari, Gong, Zendesk, Gainsight as appropriate
    - Enterprise: Include comprehensive tool suites and compliance considerations
-3. Generate a comprehensive 30/60/90-day onboarding plan with 3 distinct phases.
-4. Structure each phase by weekly themes (Week 1, Week 2, etc.).
-5. For each week, include:
-   - 📚 Learning objectives (2-3 specific goals)
-   - ✅ Milestone checklist (3-4 measurable outcomes)
-   - 🚩 Red flag indicator (one key warning sign if milestone isn't met)
-   - 🧭 Coaching notes for the manager (specific guidance)
 
-Start with a 2-paragraph executive summary explaining the onboarding philosophy and pacing rationale for this {company_stage} company.
+3. Generate a comprehensive 30/60/90-day onboarding plan with 3 DISTINCT phases that build progressively:
+
+**PHASE 1 (Days 1-30): Foundation & Learning**
+Focus: Core knowledge, system access, basic processes, shadowing
+Weeks 1-4 with completely unique content each week
+
+**PHASE 2 (Days 31-60): Application & Skill Building** 
+Focus: Independent work, advanced training, relationship building, process improvement
+Weeks 5-8 with completely unique content each week that builds on Phase 1
+
+**PHASE 3 (Days 61-90): Ownership & Strategic Impact**
+Focus: Full autonomy, strategic projects, mentoring others, innovation
+Weeks 9-12 with completely unique content each week that demonstrates mastery
+
+4. CRITICAL: Each phase must have fundamentally different objectives and complexity levels. Phase 2 cannot just repeat Phase 1 concepts. Phase 3 must show advanced competency and leadership.
+
+5. For each week (all 12 weeks), include unique, specific content:
+   - 📚 Learning objectives (2-3 specific goals unique to that week)
+   - ✅ Milestone checklist (3-4 measurable outcomes specific to that week)
+   - 🚩 Red flag indicator (one key warning sign if milestone isn't met)
+   - 🧭 Coaching notes for the manager (specific guidance for that week)
+
+6. Ensure progression: Week 1 should be basic orientation, Week 6 should show growing independence, Week 12 should demonstrate strategic thinking and leadership.
+
+Start with a 2-paragraph executive summary explaining the onboarding philosophy and how each phase builds toward full competency.
 
 Adjust pacing appropriately:
 - Smaller companies (<100): Faster ramp, broader responsibilities, less formal structure
 - Larger companies (500+): More structured immersion, specialized focus, formal processes
 
-Use markdown formatting throughout. Make the plan immediately actionable.
+Use markdown formatting throughout. Make the plan immediately actionable with NO repetitive content between phases.
 """
 
                 response = client.chat.completions.create(
