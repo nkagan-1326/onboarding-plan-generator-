@@ -66,6 +66,8 @@ output = response.choices[0].message.content
 st.markdown("### 🧾 Your 30/60/90-Day Onboarding Plan")
 st.markdown(output)
 
+except Exception as e:
+    st.error(f"Something went wrong: {e}")
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
