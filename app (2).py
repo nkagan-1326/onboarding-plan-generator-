@@ -1,4 +1,4 @@
-import streamlit as st
+try:import streamlit as st
 import openai
 import os
 import requests
