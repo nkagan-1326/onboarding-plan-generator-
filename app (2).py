@@ -117,6 +117,17 @@ role_presets = {
 preset_choice = st.selectbox("Select a role to prefill context:", list(role_presets.keys()))
 preset = role_presets[preset_choice]
 
+# Auto-update form fields when preset changes
+if preset_choice != "Custom (enter manually)":
+    # Update session state when preset changes
+    if st.session_state.get("last_preset") != preset_choice:
+        st.session_state["preset_role"] = preset_choice
+        st.session_state["preset_seniority"] = preset["seniority"] 
+        st.session_state["preset_function"] = preset["function"]
+        st.session_state["preset_priorities"] = preset["priorities"]
+        st.session_state["preset_constraints"] = preset["constraints"]
+        st.session_state["last_preset"] = preset_choice
+
 def analyze_plan_quality(plan_text):
     """Comprehensive analysis of the generated plan quality"""
     if not plan_text:
@@ -175,17 +186,24 @@ with col1:
                                    placeholder="Acme Corp")
         
         role = st.text_input("🎯 Role", 
-                           value=st.session_state.get("role", preset_choice if preset_choice != "Custom (enter manually)" else ""))
+                           value=st.session_state.get("role", 
+                               st.session_state.get("preset_role", preset_choice) if preset_choice != "Custom (enter manually)" else ""))
         
         col_a, col_b = st.columns(2)
         with col_a:
             seniority = st.selectbox("📈 Seniority Level", 
                                    ["Individual Contributor", "Manager", "Executive"], 
-                                   index=["Individual Contributor", "Manager", "Executive"].index(st.session_state.get("seniority", preset["seniority"])) if st.session_state.get("seniority", preset["seniority"]) else 0)
+                                   index=["Individual Contributor", "Manager", "Executive"].index(
+                                       st.session_state.get("seniority", 
+                                           st.session_state.get("preset_seniority", preset["seniority"]))) 
+                                   if st.session_state.get("seniority", st.session_state.get("preset_seniority", preset["seniority"])) else 0)
         with col_b:
             function = st.selectbox("🛠️ Functional Area", 
                                   ["Customer Success", "Revenue Operations", "Support", "Sales", "Other"], 
-                                  index=["Customer Success", "Revenue Operations", "Support", "Sales", "Other"].index(st.session_state.get("function", preset["function"])) if st.session_state.get("function", preset["function"]) else 0)
+                                  index=["Customer Success", "Revenue Operations", "Support", "Sales", "Other"].index(
+                                      st.session_state.get("function", 
+                                          st.session_state.get("preset_function", preset["function"]))) 
+                                  if st.session_state.get("function", st.session_state.get("preset_function", preset["function"])) else 0)
         
         # Company stage first (to inform size suggestions)
         company_stage = st.selectbox("🚀 Company Stage", ["Seed", "Series A", "Series B", "Growth", "Enterprise"],
@@ -230,11 +248,13 @@ with col1:
             is_customer_facing = st.checkbox("🎧 Customer-facing role?", value=st.session_state.get("is_customer_facing", True))
         
         manager_priorities = st.text_area("📌 Manager's Top Priorities", 
-                                        value=st.session_state.get("manager_priorities", preset["priorities"]),
+                                        value=st.session_state.get("manager_priorities", 
+                                            st.session_state.get("preset_priorities", preset["priorities"])),
                                         height=100)
         
         known_constraints = st.text_area("⚠️ Known Constraints", 
-                                       value=st.session_state.get("known_constraints", preset["constraints"]),
+                                       value=st.session_state.get("known_constraints", 
+                                           st.session_state.get("preset_constraints", preset["constraints"])),
                                        height=100)
         
         # Advanced Options
@@ -342,38 +362,60 @@ Team size: {team_size}"""
 Manager Priorities: {manager_priorities.strip()}
 Known Constraints: {known_constraints.strip() or "None specified"}
 
-Structure it as:
+MANDATORY STRUCTURE - You must include ALL of these sections:
 - Executive Summary (2 paragraphs)
-- Phase 1: Foundation (Weeks 1-4)
-- Phase 2: Application (Weeks 5-8)  
+- Phase 1: Foundation (Weeks 1-4) 
+- Phase 2: Application (Weeks 5-8)
 - Phase 3: Ownership (Weeks 9-12)
 
-For each week, use this exact format:
+YOU MUST WRITE OUT EVERY SINGLE WEEK (1 through 12) using this exact format:
 
-## Week X: [Theme]
+## Week X: [Specific Theme Name]
 📚 **Learning Objectives**
-- [objective 1]
-- [objective 2]
+- [specific, measurable objective 1]
+- [specific, measurable objective 2]
 
-✅ **Milestone Checklist**
-- [ ] [deliverable 1]
-- [ ] [deliverable 2]
-- [ ] [deliverable 3]
+✅ **Milestone Checklist**  
+- [ ] [concrete deliverable 1]
+- [ ] [concrete deliverable 2]
+- [ ] [concrete deliverable 3]
 
 🚩 **Red Flag**
-[warning sign]
+[One specific warning sign if goals aren't met]
 
 🧭 **Manager Coaching Notes**
-[specific guidance]
+[Specific guidance for manager's 1:1 this week]
 
-Tech stack assumptions for {company_stage}:
+REQUIRED HR/ONBOARDING ELEMENTS (must include in Week 1-2):
+- Complete all new hire paperwork and documentation
+- Enroll in health insurance, 401k, and other benefits
+- Review employee handbook and company policies
+- Complete mandatory compliance training (security, harassment, etc.)
+- Set up IT accounts and equipment
+
+BUSINESS TOOL TRAINING FOCUS - Only include training for business-critical tools:
+For {company_stage} companies, focus training on:
 {
-"HubSpot CRM, Pylon support, Slack, Notion" if company_stage in ["Seed", "Series A"] else
+"HubSpot CRM, specialized support platforms" if company_stage in ["Seed", "Series A"] else
 "Salesforce CRM, Zendesk, Gong, Gainsight" if company_stage in ["Series B", "Growth"] else  
-"Salesforce + Revenue Cloud, ServiceNow, Teams, Confluence"
+"Salesforce + Revenue Cloud, ServiceNow, advanced analytics platforms"
 }
 
-CRITICAL: You must write out ALL 12 weeks. Do not use any shortcuts."""
+DO NOT include basic tool training for:
+- Slack/Teams (assume users know communication tools)
+- Email/Calendar (basic digital literacy assumed)  
+- Basic computer skills or common workplace software
+
+CRITICAL REQUIREMENTS:
+1. Write exactly 12 weeks - do not skip any weeks
+2. Each week must be completely different with unique objectives
+3. Progressive difficulty: Week 1 = HR/basics, Week 12 = advanced leadership
+4. Reference business-critical tools by name, not basic communication tools
+5. No shortcuts, placeholders, or "continue this format" language
+6. Focus on {function} responsibilities and success metrics
+7. Include proper HR onboarding in early weeks
+
+Write all 12 weeks now - do not summarize or use shortcuts."""
 
                 response = client.chat.completions.create(
                     model=model_choice,
