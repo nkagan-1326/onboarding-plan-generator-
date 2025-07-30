@@ -229,6 +229,7 @@ if submitted:
     else:
         # Generate the plan
         with st.spinner(f"🤖 Generating plan with {model_choice}..."):
+    else:
         # Show prompt engineering approach
         with st.expander("🔍 AI Prompt Engineering Strategy"):
             context_points = len([x for x in [role, function, company_stage, manager_priorities, known_constraints, company_name] if x])
