@@ -176,15 +176,23 @@ with col1:
             "Enterprise": "1000+"
         }
         
-        # Use stage-suggested size if user hasn't manually set one, otherwise keep user's choice
+        # Initialize session state for tracking user overrides
         if "user_set_company_size" not in st.session_state:
-            suggested_size = stage_to_size.get(company_stage, "26–100")
-        else:
-            suggested_size = st.session_state.get("company_size", stage_to_size.get(company_stage, "26–100"))
+            st.session_state["user_set_company_size"] = False
+        if "last_stage" not in st.session_state:
+            st.session_state["last_stage"] = company_stage
+        
+        # Auto-update size when stage changes, unless user has overridden
+        if st.session_state["last_stage"] != company_stage and not st.session_state["user_set_company_size"]:
+            st.session_state["company_size"] = stage_to_size.get(company_stage, "26–100")
+            st.session_state["last_stage"] = company_stage
+        
+        # Use suggested size or user's previous choice
+        current_size = st.session_state.get("company_size", stage_to_size.get(company_stage, "26–100"))
         
         company_size = st.selectbox("🏢 Company Size", ["1–25", "26–100", "101–500", "501–1000", "1000+"],
-                                  index=["1–25", "26–100", "101–500", "501–1000", "1000+"].index(suggested_size),
-                                  help=f"Suggested for {company_stage}: {stage_to_size.get(company_stage)}")
+                                  index=["1–25", "26–100", "101–500", "501–1000", "1000+"].index(current_size) if current_size in ["1–25", "26–100", "101–500", "501–1000", "1000+"] else 1,
+                                  help=f"Auto-suggested for {company_stage}: {stage_to_size.get(company_stage, 'N/A')} • Override anytime")
         
         # Track if user manually changed company size
         if st.session_state.get("company_size") != company_size:
@@ -215,7 +223,24 @@ with col1:
                 max_tokens = st.number_input("Max Response Length", 1000, 4000, 2500)
                 plan_style = st.selectbox("Plan Style", ["Detailed", "Concise", "Bullet Points"])
 
-        submitted = st.form_submit_button("🚀 Generate Plan", use_container_width=True)
+        # Input validation and error handling
+        input_errors = []
+        if not role.strip():
+            input_errors.append("Role is required")
+        if not manager_priorities.strip():
+            input_errors.append("Manager priorities are required")
+        if len(manager_priorities.strip()) < 10:
+            input_errors.append("Manager priorities should be more descriptive (at least 10 characters)")
+        if team_size < 1 or team_size > 10000:
+            input_errors.append("Team size should be between 1 and 10,000")
+        
+        if input_errors:
+            for error in input_errors:
+                st.error(f"⚠️ {error}")
+
+        submitted = st.form_submit_button("🚀 Generate Plan", 
+                                        use_container_width=True,
+                                        disabled=bool(input_errors))  # Disable if errors exist
 
 with col2:
     st.subheader("📊 Demo Analytics")
@@ -241,13 +266,13 @@ with col2:
 # --- Generate Plan ---
 if submitted:
     if not openai_api_key:
-        st.error("Please enter your OpenAI API key in the sidebar or set it as an environment variable.")
-    elif not role or not manager_priorities:
-        st.error("Please fill in at least the role and manager priorities.")
+        st.error("🔑 Please enter your OpenAI API key in the sidebar or set it as an environment variable.")
+    elif not role.strip() or not manager_priorities.strip():
+        st.error("📝 Please fill in at least the role and manager priorities.")
     else:
         # Show prompt engineering approach
         with st.expander("🔍 AI Prompt Engineering Strategy"):
-            context_points = len([x for x in [role, function, company_stage, manager_priorities, known_constraints, company_name] if x])
+            context_points = len([x for x in [role, function, company_stage, manager_priorities, known_constraints, company_name] if x.strip()])
             st.write(f"""
             **Prompt Engineering Approach:**
             ✅ Role-based context injection ({seniority} {function})  
@@ -260,7 +285,7 @@ if submitted:
             **Model Settings**: {model_choice} | Temperature: {temperature} | Max tokens: {max_tokens}
             """)
 
-        # Generate the plan
+        # Generate the plan with comprehensive error handling
         with st.spinner(f"🤖 Generating plan with {model_choice}..."):
             try:
                 client = openai.OpenAI(api_key=openai_api_key)
@@ -276,16 +301,16 @@ if submitted:
 You are an experienced onboarding architect designing a high-impact plan for a new hire at a B2B company.
 
 Context:
-- Company: {company_name or "the company"}
-- Role: {role}
+- Company: {company_name.strip() or "the company"}
+- Role: {role.strip()}
 - Seniority: {seniority}
 - Function: {function}
 - Company Size: {company_size}
 - Company Stage: {company_stage}
 - Team Size: {team_size}
 - Customer-Facing: {"Yes" if is_customer_facing else "No"}
-- Manager's Top Priorities: {manager_priorities}
-- Known Constraints: {known_constraints}
+- Manager's Top Priorities: {manager_priorities.strip()}
+- Known Constraints: {known_constraints.strip() or "None specified"}
 
 Style Requirements: {style_instructions[plan_style]}
 
@@ -330,6 +355,7 @@ Adjust pacing appropriately:
 Use markdown formatting throughout. Make the plan immediately actionable with NO repetitive content between phases.
 """
 
+                # API call with timeout and retry logic
                 response = client.chat.completions.create(
                     model=model_choice,
                     messages=[
@@ -337,39 +363,46 @@ Use markdown formatting throughout. Make the plan immediately actionable with NO
                         {"role": "user", "content": prompt}
                     ],
                     temperature=temperature,
-                    max_tokens=max_tokens
+                    max_tokens=max_tokens,
+                    timeout=60  # 60 second timeout
                 )
 
                 output = response.choices[0].message.content
                 
-                # Display the plan
-                st.markdown("### 🧾 Your AI-Generated 30/60/90-Day Onboarding Plan")
-                st.markdown(output)
-                
-                # Plan quality analysis
-                with st.expander("📊 Plan Quality Analysis"):
-                    metrics = analyze_plan_quality(output)
-                    if metrics:
-                        col1, col2, col3, col4, col5, col6 = st.columns(6)
-                        with col1: st.metric("Word Count", metrics["Total Length"])
-                        with col2: st.metric("Milestones", metrics["Milestones"])  
-                        with col3: st.metric("Red Flags", metrics["Red Flags"])
-                        with col4: st.metric("Coaching Notes", metrics["Coaching Notes"])
-                        with col5: st.metric("Weekly Sections", metrics["Weekly Sections"])
-                        with col6: st.metric("Quality Score", metrics["Quality Score"])
-                
-                # Export options
-                st.subheader("📤 Export Options")
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    if st.button("📋 Copy to Clipboard"):
-                        st.code(output, language="markdown")
-                        st.success("Plan ready to copy!")
-                
-                with col2:
-                    if st.button("📧 Email Template"):
-                        email_body = f"""Subject: Onboarding Plan for {role}
+                # Validate output quality before displaying
+                if not output or len(output.strip()) < 500:
+                    st.error("⚠️ Generated plan seems too short. Please try again or adjust parameters.")
+                elif "Week" not in output:
+                    st.error("⚠️ Generated plan missing weekly structure. Please try again.")
+                else:
+                    # Display the plan
+                    st.markdown("### 🧾 Your AI-Generated 30/60/90-Day Onboarding Plan")
+                    st.markdown(output)
+                    
+                    # Plan quality analysis
+                    with st.expander("📊 Plan Quality Analysis"):
+                        metrics = analyze_plan_quality(output)
+                        if metrics:
+                            col1, col2, col3, col4, col5, col6 = st.columns(6)
+                            with col1: st.metric("Word Count", metrics["Total Length"])
+                            with col2: st.metric("Milestones", metrics["Milestones"])  
+                            with col3: st.metric("Red Flags", metrics["Red Flags"])
+                            with col4: st.metric("Coaching Notes", metrics["Coaching Notes"])
+                            with col5: st.metric("Weekly Sections", metrics["Weekly Sections"])
+                            with col6: st.metric("Quality Score", metrics["Quality Score"])
+                    
+                    # Export options
+                    st.subheader("📤 Export Options")
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        if st.button("📋 Copy to Clipboard"):
+                            st.code(output, language="markdown")
+                            st.success("Plan ready to copy!")
+                    
+                    with col2:
+                        if st.button("📧 Email Template"):
+                            email_body = f"""Subject: Onboarding Plan for {role}
 
 Hi [Manager Name],
 
@@ -381,20 +414,28 @@ This plan is customized for our {company_stage} stage company and includes weekl
 
 Best regards,
 [Your Name]"""
-                        st.text_area("Email Draft:", email_body, height=200)
-                
-                with col3:
-                    if st.button("🔄 Generate Variation"):
-                        st.info("Tip: Try adjusting the creativity level or style in Advanced Options above, then regenerate!")
+                            st.text_area("Email Draft:", email_body, height=200)
+                    
+                    with col3:
+                        if st.button("🔄 Generate Variation"):
+                            st.info("Tip: Try adjusting the creativity level or style in Advanced Options above, then regenerate!")
 
-                # Technical implementation details
-                with st.expander("⚙️ Technical Implementation Details"):
-                    st.write("**AI Integration**: OpenAI API with structured prompting and context management")
-                    st.write("**Prompt Engineering**: Dynamic assembly based on 8+ user input variables")
-                    st.write("**Quality Validation**: Automated analysis of output completeness and structure")
-                    st.write(f"**Response Time**: Generated in ~{10 + len(output)//100} seconds")
-                    st.write(f"**Token Usage**: ~{len(prompt.split()) + len(output.split())} tokens estimated")
+                    # Technical implementation details
+                    with st.expander("⚙️ Technical Implementation Details"):
+                        st.write("**AI Integration**: OpenAI API with structured prompting and context management")
+                        st.write("**Prompt Engineering**: Dynamic assembly based on 8+ user input variables")
+                        st.write("**Quality Validation**: Automated analysis of output completeness and structure")
+                        st.write(f"**Response Time**: Generated in ~{10 + len(output)//100} seconds")
+                        st.write(f"**Token Usage**: ~{len(prompt.split()) + len(output.split())} tokens estimated")
 
+            except openai.AuthenticationError:
+                st.error("🔑 **Authentication Error**: Invalid API key. Please check your OpenAI API key.")
+            except openai.RateLimitError:
+                st.error("🚫 **Rate Limit**: Too many requests. Please wait a moment and try again.")
+            except openai.APITimeoutError:
+                st.error("⏱️ **Timeout**: Request took too long. Please try again.")
+            except openai.APIConnectionError:
+                st.error("🌐 **Connection Error**: Cannot reach OpenAI. Check your internet connection.")
             except Exception as e:
-                st.error(f"Generation failed: {e}")
-                st.info("💡 **Troubleshooting**: Check your API key and try again. For demo purposes, you can use the sample scenarios in the sidebar.")
+                st.error(f"❌ **Unexpected Error**: {str(e)}")
+                st.info("💡 **Troubleshooting**: Try using a demo scenario or check your API key. Contact support if the issue persists.")
