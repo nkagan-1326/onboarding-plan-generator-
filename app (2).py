@@ -163,13 +163,33 @@ with col1:
                                   ["Customer Success", "Revenue Operations", "Support", "Sales", "Other"], 
                                   index=["Customer Success", "Revenue Operations", "Support", "Sales", "Other"].index(st.session_state.get("function", preset["function"])) if st.session_state.get("function", preset["function"]) else 0)
         
-        col_c, col_d = st.columns(2)
-        with col_c:
-            company_size = st.selectbox("🏢 Company Size", ["1–25", "26–100", "101–500", "501–1000", "1000+"],
-                                      index=["1–25", "26–100", "101–500", "501–1000", "1000+"].index(st.session_state.get("company_size", "26–100")) if st.session_state.get("company_size") else 1)
-        with col_d:
-            company_stage = st.selectbox("🚀 Company Stage", ["Seed", "Series A", "Series B", "Growth", "Enterprise"],
-                                       index=["Seed", "Series A", "Series B", "Growth", "Enterprise"].index(st.session_state.get("company_stage", "Series A")) if st.session_state.get("company_stage") else 1)
+        # Company stage first (to inform size suggestions)
+        company_stage = st.selectbox("🚀 Company Stage", ["Seed", "Series A", "Series B", "Growth", "Enterprise"],
+                                   index=["Seed", "Series A", "Series B", "Growth", "Enterprise"].index(st.session_state.get("company_stage", "Series A")) if st.session_state.get("company_stage") else 1)
+        
+        # Auto-suggest company size based on stage, but allow override
+        stage_to_size = {
+            "Seed": "1–25",
+            "Series A": "26–100", 
+            "Series B": "101–500",
+            "Growth": "501–1000",
+            "Enterprise": "1000+"
+        }
+        
+        # Use stage-suggested size if user hasn't manually set one, otherwise keep user's choice
+        if "user_set_company_size" not in st.session_state:
+            suggested_size = stage_to_size.get(company_stage, "26–100")
+        else:
+            suggested_size = st.session_state.get("company_size", stage_to_size.get(company_stage, "26–100"))
+        
+        company_size = st.selectbox("🏢 Company Size", ["1–25", "26–100", "101–500", "501–1000", "1000+"],
+                                  index=["1–25", "26–100", "101–500", "501–1000", "1000+"].index(suggested_size),
+                                  help=f"Suggested for {company_stage}: {stage_to_size.get(company_stage)}")
+        
+        # Track if user manually changed company size
+        if st.session_state.get("company_size") != company_size:
+            st.session_state["user_set_company_size"] = True
+            st.session_state["company_size"] = company_size
         
         col_e, col_f = st.columns(2)
         with col_e:
