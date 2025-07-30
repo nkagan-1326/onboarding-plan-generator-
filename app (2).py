@@ -244,7 +244,7 @@ with col1:
                 model_choice = st.selectbox("AI Model", ["gpt-4", "gpt-3.5-turbo"], help="GPT-4 provides more detailed plans")
                 temperature = st.slider("Creativity Level", 0.0, 1.0, 0.7, help="Higher = more creative, Lower = more structured")
             with col_h:
-                max_tokens = st.number_input("Max Response Length", 1000, 4000, 2500)
+                max_tokens = st.number_input("Max Response Length", 1000, 8000, 4000, help="Higher values allow more complete plans")
                 plan_style = st.selectbox("Plan Style", ["Detailed", "Concise", "Bullet Points"])
 
         # Input validation and error handling
@@ -322,89 +322,259 @@ if submitted:
                 }
 
                 prompt = f"""
-You are an experienced onboarding architect designing a high-impact plan for a new hire at a B2B company.
+You are creating a complete 12-week onboarding plan. You must write out every single week in full detail.
 
-Context:
+COMPANY CONTEXT:
 - Company: {company_name.strip() or "the company"}
 - Role: {role.strip()}
-- Seniority: {seniority}
 - Function: {function}
-- Company Size: {company_size}
 - Company Stage: {company_stage}
-- Team Size: {team_size}
-- Customer-Facing: {"Yes" if is_customer_facing else "No"}
-- Manager's Top Priorities: {manager_priorities.strip()}
-- Known Constraints: {known_constraints.strip() or "None specified"}
+- Company Size: {company_size}
+- Manager Priorities: {manager_priorities.strip()}
 
-Style Requirements: {style_instructions[plan_style]}
+MANDATORY OUTPUT STRUCTURE - Write exactly this for all 12 weeks:
 
-CRITICAL REQUIREMENTS - You MUST follow these exactly:
+# Executive Summary
+[2 paragraphs about the onboarding approach]
 
-1. COMPLETE ALL 12 WEEKS - Do not use placeholders, summaries, or "continue this format" shortcuts. Write out every single week in full detail.
+# Phase 1: Foundation (Weeks 1-4)
 
-2. MANDATORY STRUCTURE for each week (repeat this exact format 12 times):
-
-## Week [NUMBER]: [Specific Theme]
-
+## Week 1: Company Orientation
 📚 **Learning Objectives**
-- [Specific objective 1]
-- [Specific objective 2] 
-- [Specific objective 3]
+- Learn company mission, values, and culture
+- Complete IT setup and security training
+- Meet immediate team members and key stakeholders
 
 ✅ **Milestone Checklist**
-- [ ] [Concrete deliverable 1]
-- [ ] [Concrete deliverable 2]
-- [ ] [Concrete deliverable 3]
-- [ ] [Concrete deliverable 4]
+- [ ] Complete employee handbook review
+- [ ] Finish IT security certification
+- [ ] Attend team introduction meetings
+- [ ] Set up workspace and tools
 
 🚩 **Red Flag**
-[One specific warning sign if this week's goals aren't met]
+New hire seems overwhelmed by information volume or hasn't completed basic setup tasks.
 
 🧭 **Manager Coaching Notes**
-[Specific guidance for the manager's 1:1 this week]
+Focus on making them feel welcome. Check in twice daily. Ensure they have everything needed to be productive.
 
-3. TECH STACK (reference these specific tools by name throughout):
-   - {company_stage} companies typically use: {
-   "Seed/Series A" if company_stage in ["Seed", "Series A"] else 
-   "Series B/Growth" if company_stage in ["Series B", "Growth"] else 
-   "Enterprise"
-   } stack
-   - Seed/Series A: HubSpot CRM, Pylon support, Slack, Notion, Mixpanel
-   - Series B/Growth: Salesforce CRM, Zendesk, Gong/Chorus, Gainsight, Outreach  
-   - Enterprise: Salesforce + Revenue Cloud, ServiceNow, Teams, Confluence, Tableau
+## Week 2: Product Deep Dive
+📚 **Learning Objectives**
+- Understand core product/service offerings
+- Learn customer personas and use cases
+- Grasp competitive positioning and market context
 
-4. EXACT WEEKLY PROGRESSION (write all 12 weeks, no shortcuts):
+✅ **Milestone Checklist**
+- [ ] Complete product training modules
+- [ ] Review customer case studies
+- [ ] Understand competitive landscape
+- [ ] Can explain value proposition clearly
 
-**PHASE 1: Foundation (Weeks 1-4)**
-- Week 1: Company orientation, system access, team introductions
-- Week 2: Product knowledge, customer understanding, market context
-- Week 3: Core processes, tool training, workflow mastery
-- Week 4: Shadowing, supervised practice, initial feedback
+🚩 **Red Flag**
+Cannot articulate basic product benefits or struggles with customer persona concepts.
 
-**PHASE 2: Application (Weeks 5-8)**  
-- Week 5: Independent work with guidance, first real tasks
-- Week 6: Cross-team collaboration, stakeholder engagement
-- Week 7: Process improvement, advanced tool usage
-- Week 8: Customer interaction, feedback integration
+🧭 **Manager Coaching Notes**
+Quiz them on product knowledge. Share customer success stories. Connect product features to business outcomes.
 
-**PHASE 3: Ownership (Weeks 9-12)**
-- Week 9: Full responsibility, mentoring others
-- Week 10: Strategic projects, data-driven insights  
-- Week 11: Process optimization, knowledge sharing
-- Week 12: Performance review, quarterly goal setting
+## Week 3: Process and Tools Training
+📚 **Learning Objectives**
+- Master primary tools and systems
+- Learn core workflows and processes
+- Understand reporting and communication protocols
 
-5. ROLE CUSTOMIZATION for {function}:
-   {
-   "Focus on account health, retention metrics, and customer success workflows" if function == "Customer Success" else
-   "Emphasize pipeline management, deal qualification, and sales process mastery" if function == "Sales" else  
-   "Prioritize data analysis, process optimization, and cross-functional alignment" if function == "Revenue Operations" else
-   "Stress ticket resolution, customer satisfaction, and escalation procedures" if function == "Support" else
-   "Adapt content to role-specific responsibilities and success metrics"
-   }
+✅ **Milestone Checklist**
+- [ ] Complete {
+'HubSpot' if company_stage in ['Seed', 'Series A'] else 
+'Salesforce' if company_stage in ['Series B', 'Growth', 'Enterprise'] else 'CRM'
+} training
+- [ ] Learn ticketing/support system
+- [ ] Understand communication protocols
+- [ ] Set up dashboards and reporting
 
-WRITE ALL 12 WEEKS IN COMPLETE DETAIL. Do not use any shortcuts, placeholders, or "continue this format" language. Each week must be fully written out with all required sections.
+🚩 **Red Flag**
+Struggles with basic tool navigation or frequently asks for help with simple tasks.
 
-Start with a brief executive summary, then provide all 12 weeks with the exact format specified above.
+🧭 **Manager Coaching Notes**
+Provide hands-on tool practice. Pair with experienced team member for shadowing. Create cheat sheets for common tasks.
+
+## Week 4: Supervised Practice
+📚 **Learning Objectives**
+- Apply knowledge in real scenarios with guidance
+- Build confidence through supervised practice
+- Begin developing professional relationships
+
+✅ **Milestone Checklist**
+- [ ] Complete first supervised tasks successfully
+- [ ] Participate in team meetings actively
+- [ ] Begin building stakeholder relationships
+- [ ] Demonstrate basic competency in role functions
+
+🚩 **Red Flag**
+Hesitant to take on tasks or requires excessive guidance for basic activities.
+
+🧭 **Manager Coaching Notes**
+Gradually increase responsibility. Provide specific feedback on performance. Celebrate early wins and progress.
+
+# Phase 2: Application (Weeks 5-8)
+
+## Week 5: Independent Work with Guidance
+📚 **Learning Objectives**
+- Execute tasks independently while maintaining quality
+- Develop problem-solving skills for common issues
+- Begin taking ownership of specific responsibilities
+
+✅ **Milestone Checklist**
+- [ ] Complete assigned tasks with minimal supervision
+- [ ] Demonstrate initiative in problem-solving
+- [ ] Meet quality standards consistently
+- [ ] Proactively communicate progress and blockers
+
+🚩 **Red Flag**
+Still requires constant supervision or quality of work is below expectations.
+
+🧭 **Manager Coaching Notes**
+Step back but stay available. Focus on outcome-based feedback. Encourage questions and learning from mistakes.
+
+## Week 6: Cross-Functional Collaboration
+📚 **Learning Objectives**
+- Build relationships across departments
+- Understand how role fits into broader organization
+- Develop stakeholder management skills
+
+✅ **Milestone Checklist**
+- [ ] Participate in cross-team projects
+- [ ] Build relationships with key stakeholders
+- [ ] Understand interdepartmental workflows
+- [ ] Contribute meaningful insights in meetings
+
+🚩 **Red Flag**
+Difficulty working with other teams or struggles to see bigger picture connections.
+
+🧭 **Manager Coaching Notes**
+Facilitate introductions to key people. Explain organizational context. Help them understand their impact on others.
+
+## Week 7: Process Improvement and Advanced Skills
+📚 **Learning Objectives**
+- Identify opportunities for process optimization
+- Develop advanced proficiency in core tools
+- Begin contributing strategic insights
+
+✅ **Milestone Checklist**
+- [ ] Suggest at least one process improvement
+- [ ] Demonstrate advanced tool usage
+- [ ] Contribute data-driven insights
+- [ ] Help solve complex problems
+
+🚩 **Red Flag**
+Only follows existing processes without thinking critically or suggesting improvements.
+
+🧭 **Manager Coaching Notes**
+Encourage innovative thinking. Share examples of successful improvements. Ask for their perspective on current processes.
+
+## Week 8: Customer/Client Interaction
+📚 **Learning Objectives**
+- {
+'Manage customer relationships effectively' if is_customer_facing else 
+'Support customer-facing team members effectively'
+}
+- Apply knowledge in real customer scenarios
+- Develop professional communication skills
+
+✅ **Milestone Checklist**
+- [ ] {
+'Handle customer interactions independently' if is_customer_facing else 
+'Support customer-facing initiatives'
+}
+- [ ] Demonstrate professional communication
+- [ ] Apply product knowledge in practical situations
+- [ ] Receive positive feedback from internal/external stakeholders
+
+🚩 **Red Flag**
+{
+'Customer complaints or negative feedback about interactions' if is_customer_facing else 
+'Cannot effectively support customer-facing team members'
+}
+
+🧭 **Manager Coaching Notes**
+{
+'Monitor customer interactions. Provide feedback on communication style. Share best practices.' if is_customer_facing else 
+'Help them understand customer impact. Share customer feedback. Connect their work to customer outcomes.'
+}
+
+# Phase 3: Ownership (Weeks 9-12)
+
+## Week 9: Full Ownership and Mentoring
+📚 **Learning Objectives**
+- Take complete ownership of core responsibilities
+- Begin mentoring newer team members
+- Demonstrate leadership potential
+
+✅ **Milestone Checklist**
+- [ ] Manage responsibilities independently
+- [ ] Mentor or train newer hires
+- [ ] Lead small projects or initiatives
+- [ ] Demonstrate consistent high performance
+
+🚩 **Red Flag**
+Still requires significant oversight or unable to help others effectively.
+
+🧭 **Manager Coaching Notes**
+Delegate more complex projects. Ask them to train new hires. Discuss career development and growth opportunities.
+
+## Week 10: Strategic Projects and Data Analysis
+📚 **Learning Objectives**
+- Lead strategic initiatives relevant to role
+- Develop data analysis and insights capabilities
+- Contribute to departmental planning and strategy
+
+✅ **Milestone Checklist**
+- [ ] Lead a strategic project from start to finish
+- [ ] Provide data-driven recommendations
+- [ ] Contribute to team strategy discussions
+- [ ] Demonstrate business acumen and strategic thinking
+
+🚩 **Red Flag**
+Struggles with strategic thinking or cannot translate data into actionable insights.
+
+🧭 **Manager Coaching Notes**
+Involve them in strategic planning. Teach them to think beyond day-to-day tasks. Share business context and goals.
+
+## Week 11: Process Optimization and Knowledge Sharing
+📚 **Learning Objectives**
+- Optimize existing processes for better efficiency
+- Share knowledge and best practices with team
+- Develop systems thinking and continuous improvement mindset
+
+✅ **Milestone Checklist**
+- [ ] Implement significant process improvements
+- [ ] Create documentation or training materials
+- [ ] Lead knowledge sharing sessions
+- [ ] Demonstrate systems thinking
+
+🚩 **Red Flag**
+Cannot see process optimization opportunities or reluctant to share knowledge with others.
+
+🧭 **Manager Coaching Notes**
+Encourage them to document learnings. Ask them to present improvements to the team. Recognize their contributions publicly.
+
+## Week 12: Performance Review and Future Planning
+📚 **Learning Objectives**
+- Reflect on growth and achievements during onboarding
+- Set goals and development plans for next quarter
+- Prepare for full integration as productive team member
+
+✅ **Milestone Checklist**
+- [ ] Complete comprehensive performance review
+- [ ] Set SMART goals for next quarter
+- [ ] Identify areas for continued development
+- [ ] Demonstrate readiness for full productivity
+
+🚩 **Red Flag**
+Unable to self-assess performance accurately or lacks clear goals for continued growth.
+
+🧭 **Manager Coaching Notes**
+Conduct thorough performance review. Celebrate achievements. Set clear expectations for ongoing performance and development.
+
+This completes the 12-week onboarding plan with specific, actionable guidance for each week.
 """
 
                 # API call with timeout and retry logic
@@ -525,4 +695,3 @@ Best regards,
             except Exception as e:
                 st.error(f"❌ **Unexpected Error**: {str(e)}")
                 st.info("💡 **Troubleshooting**: Try using a demo scenario or check your API key. Contact support if the issue persists.")
-                
