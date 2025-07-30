@@ -338,63 +338,73 @@ Context:
 
 Style Requirements: {style_instructions[plan_style]}
 
-CRITICAL INSTRUCTIONS - Follow these exactly:
+CRITICAL REQUIREMENTS - You MUST follow these exactly:
 
-1. COMPANY CONTEXT: This is a B2B {company_stage} stage company with {company_size} employees.
+1. COMPLETE ALL 12 WEEKS - Do not use placeholders, summaries, or "continue this format" shortcuts. Write out every single week in full detail.
 
-2. TECH STACK ASSUMPTIONS (reference these specific tools by name):
-   - Seed/Series A: HubSpot CRM, Pylon support platform, Slack communication, Notion documentation, Mixpanel analytics
-   - Series B/Growth: Salesforce CRM, Zendesk support, Gong/Chorus sales intelligence, Gainsight customer success, Outreach sales engagement
-   - Enterprise: Salesforce + Revenue Cloud, ServiceNow support, Microsoft Teams, Confluence documentation, Tableau/PowerBI analytics
+2. MANDATORY STRUCTURE for each week (repeat this exact format 12 times):
 
-3. MANDATORY STRUCTURE - Generate exactly 12 weeks across 3 phases:
+## Week [NUMBER]: [Specific Theme]
 
-**PHASE 1 (WEEKS 1-4): Foundation & Learning**
-- Week 1: Company orientation, basic system access, team introductions
-- Week 2: Product/service deep dive, customer personas, competitive landscape
-- Week 3: Core processes training, tool proficiency building
-- Week 4: Shadowing experienced team members, first supervised tasks
+📚 **Learning Objectives**
+- [Specific objective 1]
+- [Specific objective 2] 
+- [Specific objective 3]
 
-**PHASE 2 (WEEKS 5-8): Application & Skill Building**
-- Week 5: Independent task execution with guidance
-- Week 6: Cross-functional collaboration, stakeholder meetings
-- Week 7: Process improvement identification, advanced tool usage
-- Week 8: Customer/client interaction (if applicable), feedback integration
+✅ **Milestone Checklist**
+- [ ] [Concrete deliverable 1]
+- [ ] [Concrete deliverable 2]
+- [ ] [Concrete deliverable 3]
+- [ ] [Concrete deliverable 4]
 
-**PHASE 3 (WEEKS 9-12): Ownership & Strategic Impact**
-- Week 9: Full ownership of responsibilities, mentoring newer hires
-- Week 10: Strategic project leadership, data-driven insights
-- Week 11: Process optimization, knowledge sharing initiatives
-- Week 12: Performance review, goal setting for next quarter
+🚩 **Red Flag**
+[One specific warning sign if this week's goals aren't met]
 
-4. WEEKLY FORMAT (required for each of 12 weeks):
-   - 📚 **Learning Objectives** (2-3 specific, measurable goals)
-   - ✅ **Milestone Checklist** (3-4 concrete deliverables/outcomes)
-   - 🚩 **Red Flag** (1 clear warning sign if behind schedule)
-   - 🧭 **Manager Coaching Notes** (specific guidance for 1:1s)
+🧭 **Manager Coaching Notes**
+[Specific guidance for the manager's 1:1 this week]
 
-5. ROLE-SPECIFIC ADAPTATIONS:
-   - Customer Success: Focus on account management, retention metrics, customer health
-   - Sales: Emphasize pipeline building, deal qualification, CRM proficiency
-   - Revenue Operations: Prioritize data analysis, process optimization, cross-team alignment
-   - Support: Stress ticket resolution, customer satisfaction, escalation procedures
+3. TECH STACK (reference these specific tools by name throughout):
+   - {company_stage} companies typically use: {
+   "Seed/Series A" if company_stage in ["Seed", "Series A"] else 
+   "Series B/Growth" if company_stage in ["Series B", "Growth"] else 
+   "Enterprise"
+   } stack
+   - Seed/Series A: HubSpot CRM, Pylon support, Slack, Notion, Mixpanel
+   - Series B/Growth: Salesforce CRM, Zendesk, Gong/Chorus, Gainsight, Outreach  
+   - Enterprise: Salesforce + Revenue Cloud, ServiceNow, Teams, Confluence, Tableau
 
-6. COMPANY SIZE CONSIDERATIONS:
-   - Small companies (1-100): Broader responsibilities, informal processes, direct customer contact
-   - Large companies (500+): Specialized focus, formal procedures, compliance training
+4. EXACT WEEKLY PROGRESSION (write all 12 weeks, no shortcuts):
 
-7. QUALITY REQUIREMENTS:
-   - Each week must have unique content (no repetition between weeks)
-   - Progressive complexity from basic (Week 1) to advanced (Week 12)
-   - Specific tool training integrated throughout
-   - Measurable outcomes with clear success criteria
-   - Manager guidance that addresses common onboarding challenges
+**PHASE 1: Foundation (Weeks 1-4)**
+- Week 1: Company orientation, system access, team introductions
+- Week 2: Product knowledge, customer understanding, market context
+- Week 3: Core processes, tool training, workflow mastery
+- Week 4: Shadowing, supervised practice, initial feedback
 
-8. EXECUTIVE SUMMARY: Start with 2 paragraphs explaining:
-   - The onboarding philosophy for this specific role/company combination
-   - How each phase builds capability and confidence toward full productivity
+**PHASE 2: Application (Weeks 5-8)**  
+- Week 5: Independent work with guidance, first real tasks
+- Week 6: Cross-team collaboration, stakeholder engagement
+- Week 7: Process improvement, advanced tool usage
+- Week 8: Customer interaction, feedback integration
 
-Make this plan immediately actionable with specific tasks, tools, and timelines. No generic advice - everything should be contextual to the role, company stage, and priorities provided.
+**PHASE 3: Ownership (Weeks 9-12)**
+- Week 9: Full responsibility, mentoring others
+- Week 10: Strategic projects, data-driven insights  
+- Week 11: Process optimization, knowledge sharing
+- Week 12: Performance review, quarterly goal setting
+
+5. ROLE CUSTOMIZATION for {function}:
+   {
+   "Focus on account health, retention metrics, and customer success workflows" if function == "Customer Success" else
+   "Emphasize pipeline management, deal qualification, and sales process mastery" if function == "Sales" else  
+   "Prioritize data analysis, process optimization, and cross-functional alignment" if function == "Revenue Operations" else
+   "Stress ticket resolution, customer satisfaction, and escalation procedures" if function == "Support" else
+   "Adapt content to role-specific responsibilities and success metrics"
+   }
+
+WRITE ALL 12 WEEKS IN COMPLETE DETAIL. Do not use any shortcuts, placeholders, or "continue this format" language. Each week must be fully written out with all required sections.
+
+Start with a brief executive summary, then provide all 12 weeks with the exact format specified above.
 """
 
                 # API call with timeout and retry logic
@@ -412,10 +422,17 @@ Make this plan immediately actionable with specific tasks, tools, and timelines.
                 output = response.choices[0].message.content
                 
                 # Validate output quality before displaying
-                if not output or len(output.strip()) < 1000:
-                    st.error("⚠️ Generated plan seems too short. Please try again or adjust parameters.")
-                elif output.count("Week") < 8:
-                    st.error("⚠️ Generated plan missing sufficient weekly structure. Please try again.")
+                week_count = len(re.findall(r'Week \d+', output, re.IGNORECASE))
+                has_shortcuts = any(phrase in output.lower() for phrase in [
+                    'continue this format', 'repeat for weeks', '[note:', 'etc.', '...'
+                ])
+                
+                if not output or len(output.strip()) < 1500:
+                    st.error("⚠️ Generated plan seems too short. Please try again or increase max tokens.")
+                elif week_count < 10:
+                    st.error(f"⚠️ Plan only contains {week_count} weeks instead of 12. Please regenerate.")
+                elif has_shortcuts:
+                    st.error("⚠️ Plan contains shortcuts/placeholders instead of complete weeks. Please regenerate.")
                 elif not any(tool in output for tool in ['Salesforce', 'HubSpot', 'Slack', 'Notion', 'Zendesk', 'Gainsight', 'Teams']):
                     st.warning("⚠️ Plan may be missing specific tool references. Consider regenerating for more detailed guidance.")
                     st.markdown("### 🧾 Your AI-Generated 30/60/90-Day Onboarding Plan")
@@ -508,3 +525,4 @@ Best regards,
             except Exception as e:
                 st.error(f"❌ **Unexpected Error**: {str(e)}")
                 st.info("💡 **Troubleshooting**: Try using a demo scenario or check your API key. Contact support if the issue persists.")
+                
