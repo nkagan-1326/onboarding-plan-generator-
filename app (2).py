@@ -264,7 +264,7 @@ with col1:
 
         submitted = st.form_submit_button("🚀 Generate Plan", 
                                         use_container_width=True,
-                                        disabled=bool(input_errors))  # Disable if errors exist
+                                        disabled=bool(input_errors))
 
 with col2:
     st.subheader("📊 Demo Analytics")
@@ -383,7 +383,7 @@ CRITICAL: You must write out ALL 12 weeks. Do not use any shortcuts."""
                     ],
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    timeout=60  # 60 second timeout
+                    timeout=60
                 )
 
                 output = response.choices[0].message.content
@@ -479,7 +479,7 @@ Best regards,
                         st.write("**Prompt Engineering**: Dynamic assembly based on 8+ user input variables")
                         st.write("**Quality Validation**: Automated analysis of output completeness and structure")
                         st.write(f"**Response Time**: Generated in ~{10 + len(output)//100} seconds")
-                        st.write(f"**Token Usage**: ~{len(prompt.split()) + len(output.split())} tokens estimated")
+                        st.write(f"**Token Usage**: ~{len(system_prompt.split()) + len(user_prompt.split()) + len(output.split())} tokens estimated")
 
             except openai.AuthenticationError:
                 st.error("🔑 **Authentication Error**: Invalid API key. Please check your OpenAI API key.")
