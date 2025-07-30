@@ -39,7 +39,7 @@ with st.sidebar:
     demo_scenarios = {
         "Select a demo scenario...": {},
         "Fast-Growing SaaS Startup": {
-            "company_website": "https://www.notion.so",
+            "company_name": "TechFlow",
             "role": "Senior Customer Success Manager", 
             "seniority": "Manager",
             "function": "Customer Success",
@@ -51,7 +51,7 @@ with st.sidebar:
             "known_constraints": "Growing fast, limited documentation, remote-first culture"
         },
         "Enterprise RevOps Role": {
-            "company_website": "https://www.salesforce.com",
+            "company_name": "Global Solutions Inc",
             "role": "Revenue Operations Manager",
             "seniority": "Manager", 
             "function": "Revenue Operations",
@@ -63,7 +63,7 @@ with st.sidebar:
             "known_constraints": "Complex tech stack, multiple stakeholders, compliance requirements"
         },
         "Early-Stage Support Lead": {
-            "company_website": "https://www.stripe.com",
+            "company_name": "StartupCo",
             "role": "Head of Customer Support",
             "seniority": "Executive",
             "function": "Support", 
@@ -120,45 +120,7 @@ preset_choice = st.selectbox("Select a role to prefill context:", list(role_pres
 preset = role_presets[preset_choice]
 
 # --- Website enrichment ---
-def scrape_company_metadata(url):
-    try:
-        if not url.startswith("http"):
-            url = "https://" + url
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        title = soup.title.string.strip() if soup.title else ""
-        meta_desc = ""
-        for tag in soup.find_all("meta"):
-            if tag.get("name", "").lower() == "description":
-                meta_desc = tag.get("content", "").strip()
-                break
-
-        h1 = soup.find("h1")
-        first_p = soup.find("p")
-        extra = ""
-        if not meta_desc and h1:
-            extra = h1.get_text().strip()
-        elif not meta_desc and first_p:
-            extra = first_p.get_text().strip()
-
-        content_snippet = meta_desc or extra or "No readable description found."
-
-        return {
-            "success": True,
-            "title": title,
-            "description": content_snippet,
-            "product": url.split("//")[-1].split("/")[0],
-            "raw_preview": response.text[:200] + "..."
-        }
-
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
 
 def analyze_plan_quality(plan_text):
     """Analyze the generated plan for key quality metrics"""
@@ -189,9 +151,9 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     with st.form("onboarding_form"):
-        company_website = st.text_input("🌐 Company Website (optional)", 
-                                      value=st.session_state.get("company_website", ""),
-                                      placeholder="https://example.com")
+        company_name = st.text_input("🏢 Company Name (optional)", 
+                                   value=st.session_state.get("company_name", ""),
+                                   placeholder="Acme Corp")
         
         role = st.text_input("🎯 Role", 
                            value=st.session_state.get("role", preset_choice if preset_choice != "Custom (enter manually)" else ""))
@@ -265,36 +227,23 @@ if submitted:
     elif not role or not manager_priorities:
         st.error("Please fill in at least the role and manager priorities.")
     else:
-        # Website enrichment
-        website_metadata = None
-        if company_website:
-            with st.spinner("🔍 Analyzing company website..."):
-                website_metadata = scrape_company_metadata(company_website)
-                if not website_metadata["success"]:
-                    st.warning(f"Couldn't parse website: {website_metadata['error']}")
-                else:
-                    st.success(f"✅ Website analyzed: {website_metadata['description'][:100]}...")
-
+        # Generate the plan
+        with st.spinner(f"🤖 Generating plan with {model_choice}..."):
         # Show prompt engineering approach
         with st.expander("🔍 AI Prompt Engineering Strategy"):
-            context_points = len([x for x in [role, function, company_stage, manager_priorities, known_constraints] if x])
+            context_points = len([x for x in [role, function, company_stage, manager_priorities, known_constraints, company_name] if x])
             st.write(f"""
             **Prompt Engineering Approach:**
             ✅ Role-based context injection ({seniority} {function})  
             ✅ Company stage-aware recommendations ({company_stage})  
             ✅ Structured output formatting (30/60/90 phases)  
+            ✅ Progressive complexity across phases
             ✅ Dynamic constraint handling  
-            ✅ Website metadata enrichment {'✅' if website_metadata and website_metadata['success'] else '❌'}
             
             **Context Variables**: {context_points} data points injected
             **Model Settings**: {model_choice} | Temperature: {temperature} | Max tokens: {max_tokens}
             """)
-            
-            if website_metadata and website_metadata["success"]:
-                with st.expander("📊 Scraped Website Data"):
-                    st.json(website_metadata)
 
-        with st.spinner(f"🤖 Generating plan with {model_choice}..."):
             try:
                 client = openai.OpenAI(api_key=openai_api_key)
 
@@ -309,6 +258,7 @@ if submitted:
 You are an experienced onboarding architect designing a high-impact plan for a new hire at a B2B company.
 
 Context:
+- Company: {company_name or "the company"}
 - Role: {role}
 - Seniority: {seniority}
 - Function: {function}
@@ -318,16 +268,16 @@ Context:
 - Customer-Facing: {"Yes" if is_customer_facing else "No"}
 - Manager's Top Priorities: {manager_priorities}
 - Known Constraints: {known_constraints}
-{"- Company Website Analysis: " + website_metadata['description'] + " (" + website_metadata['product'] + ")" if website_metadata and website_metadata['success'] else ""}
 
 Style Requirements: {style_instructions[plan_style]}
 
 Instructions:
 1. Assume this is a B2B company in the {company_stage} stage with {company_size} employees.
-2. Based on company stage, recommend appropriate tech stack:
-   - Seed/Series A: Attio (CRM), Pylon.ai (RevOps), Intercom (Support), Vitally (CS)
-   - Series B+: Add Salesforce, Clari, Gong, Zendesk, Gainsight as appropriate
-   - Enterprise: Include comprehensive tool suites and compliance considerations
+2. Make realistic assumptions about their likely tech stack based on company stage, then reference specific tools by name in the plan:
+   - Seed/Series A: Assume they use HubSpot (CRM), Intercom (Support), Slack (Communication), Notion (Documentation)
+   - Series B/Growth: Assume Salesforce (CRM), Zendesk (Support), Gong/Chorus (Sales), Gainsight (CS), Slack/Teams
+   - Enterprise: Assume Salesforce + advanced modules, ServiceNow, Microsoft Teams, Confluence, Tableau/PowerBI
+   - Reference these tools specifically throughout the onboarding plan as if the employee will actually use them
 
 3. Generate a comprehensive 30/60/90-day onboarding plan with 3 DISTINCT phases that build progressively:
 
