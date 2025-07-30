@@ -244,6 +244,8 @@ if submitted:
             **Model Settings**: {model_choice} | Temperature: {temperature} | Max tokens: {max_tokens}
             """)
 
+        # Generate the plan
+        with st.spinner(f"🤖 Generating plan with {model_choice}..."):
             try:
                 client = openai.OpenAI(api_key=openai_api_key)
 
