@@ -1,8 +1,6 @@
-try:import streamlit as st
+import streamlit as st
 import openai
 import os
-import requests
-from bs4 import BeautifulSoup
 import json
 import re
 from datetime import datetime
@@ -24,15 +22,15 @@ with st.sidebar:
     st.write("""
     **What This Demonstrates:**
     • AI prompt engineering & context management
-    • Web scraping & data enrichment  
     • User experience design for AI tools
     • Error handling & graceful degradation
+    • Progressive complexity in AI outputs
     
     **Technical Stack:**
     • Streamlit for rapid prototyping
     • OpenAI API integration
-    • BeautifulSoup for web scraping
     • Python for backend logic
+    • Structured prompt engineering
     """)
     
     st.header("🎭 Demo Mode")
@@ -118,9 +116,6 @@ role_presets = {
 
 preset_choice = st.selectbox("Select a role to prefill context:", list(role_presets.keys()))
 preset = role_presets[preset_choice]
-
-# --- Website enrichment ---
-
 
 def analyze_plan_quality(plan_text):
     """Analyze the generated plan for key quality metrics"""
@@ -209,16 +204,19 @@ with col2:
     st.metric("Avg Plan Length", "2,847 words", "")
     
     # Fake usage chart
-    import plotly.express as px
-    import pandas as pd
-    
-    chart_data = pd.DataFrame({
-        'Role': ['Customer Success', 'Sales', 'RevOps', 'Support', 'Other'],
-        'Count': [23, 18, 12, 8, 6]
-    })
-    fig = px.pie(chart_data, values='Count', names='Role', title="Role Distribution")
-    fig.update_layout(height=300, showlegend=False)
-    st.plotly_chart(fig, use_container_width=True)
+    try:
+        import plotly.express as px
+        import pandas as pd
+        
+        chart_data = pd.DataFrame({
+            'Role': ['Customer Success', 'Sales', 'RevOps', 'Support', 'Other'],
+            'Count': [23, 18, 12, 8, 6]
+        })
+        fig = px.pie(chart_data, values='Count', names='Role', title="Role Distribution")
+        fig.update_layout(height=300, showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+    except ImportError:
+        st.write("📊 Install plotly for charts")
 
 # --- Generate Plan ---
 if submitted:
@@ -226,9 +224,6 @@ if submitted:
         st.error("Please enter your OpenAI API key in the sidebar or set it as an environment variable.")
     elif not role or not manager_priorities:
         st.error("Please fill in at least the role and manager priorities.")
-    else:
-        # Generate the plan
-        with st.spinner(f"🤖 Generating plan with {model_choice}..."):
     else:
         # Show prompt engineering approach
         with st.expander("🔍 AI Prompt Engineering Strategy"):
@@ -277,9 +272,9 @@ Style Requirements: {style_instructions[plan_style]}
 Instructions:
 1. Assume this is a B2B company in the {company_stage} stage with {company_size} employees.
 2. Make realistic assumptions about their likely tech stack based on company stage, then reference specific tools by name in the plan:
-   - Seed/Series A: Assume they use HubSpot (CRM), Intercom (Support), Slack (Communication), Notion (Documentation)
-   - Series B/Growth: Assume Salesforce (CRM), Zendesk (Support), Gong/Chorus (Sales), Gainsight (CS), Slack/Teams
-   - Enterprise: Assume Salesforce + advanced modules, ServiceNow, Microsoft Teams, Confluence, Tableau/PowerBI
+   - Seed/Series A: Assume HubSpot (CRM), Pylon (Support), Slack (Communication), Notion (Documentation), Mixpanel (Analytics)
+   - Series B/Growth: Assume Salesforce (CRM), Zendesk (Support), Gong/Chorus (Sales), Gainsight (CS), Outreach (Sales Engagement)
+   - Enterprise: Assume Salesforce + advanced modules, ServiceNow (Support), Microsoft Teams, Confluence, Tableau/PowerBI (Analytics)
    - Reference these tools specifically throughout the onboarding plan as if the employee will actually use them
 
 3. Generate a comprehensive 30/60/90-day onboarding plan with 3 DISTINCT phases that build progressively:
@@ -374,7 +369,6 @@ Best regards,
 
                 # Technical implementation details
                 with st.expander("⚙️ Technical Implementation Details"):
-                    st.write("**Web Scraping**: BeautifulSoup + requests with robust error handling")
                     st.write("**AI Integration**: OpenAI API with structured prompting and context management")
                     st.write("**Prompt Engineering**: Dynamic assembly based on 8+ user input variables")
                     st.write("**Quality Validation**: Automated analysis of output completeness and structure")
