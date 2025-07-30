@@ -118,27 +118,51 @@ preset_choice = st.selectbox("Select a role to prefill context:", list(role_pres
 preset = role_presets[preset_choice]
 
 def analyze_plan_quality(plan_text):
-    """Analyze the generated plan for key quality metrics"""
+    """Comprehensive analysis of the generated plan quality"""
     if not plan_text:
         return {}
     
-    metrics = {
-        "Total Length": len(plan_text.split()),
-        "Milestones": len(re.findall(r'✅', plan_text)),
-        "Red Flags": len(re.findall(r'🚩', plan_text)), 
-        "Coaching Notes": len(re.findall(r'🧭', plan_text)),
-        "Weekly Sections": len(re.findall(r'Week \d+', plan_text, re.IGNORECASE)),
-        "Learning Objectives": len(re.findall(r'📚', plan_text))
+    # Basic metrics
+    word_count = len(plan_text.split())
+    milestones = len(re.findall(r'✅', plan_text))
+    red_flags = len(re.findall(r'🚩', plan_text))
+    coaching_notes = len(re.findall(r'🧭', plan_text))
+    learning_objectives = len(re.findall(r'📚', plan_text))
+    weekly_sections = len(re.findall(r'Week \d+', plan_text, re.IGNORECASE))
+    
+    # Content quality checks
+    has_executive_summary = any(phrase in plan_text.lower() for phrase in ['executive summary', 'philosophy', 'overview'])
+    has_phase_headers = len(re.findall(r'Phase \d+|PHASE \d+', plan_text)) >= 3
+    has_specific_tools = any(tool in plan_text for tool in ['Salesforce', 'HubSpot', 'Slack', 'Notion', 'Zendesk', 'Gainsight'])
+    has_progression = 'Week 1' in plan_text and 'Week 12' in plan_text
+    
+    # Calculate quality score
+    quality_factors = {
+        "Has 12 weekly sections": weekly_sections >= 12,
+        "Sufficient milestones": milestones >= 24,  # 2+ per week
+        "Red flags present": red_flags >= 12,  # 1 per week
+        "Coaching guidance": coaching_notes >= 12,  # 1 per week  
+        "Learning objectives": learning_objectives >= 12,  # 1 per week
+        "Executive summary": has_executive_summary,
+        "Phase structure": has_phase_headers,
+        "Specific tools mentioned": has_specific_tools,
+        "Shows progression": has_progression,
+        "Adequate length": word_count >= 2000
     }
     
-    # Quality assessment
-    quality_score = 0
-    if metrics["Weekly Sections"] >= 10: quality_score += 25
-    if metrics["Milestones"] >= 15: quality_score += 25  
-    if metrics["Red Flags"] >= 8: quality_score += 25
-    if metrics["Coaching Notes"] >= 8: quality_score += 25
+    quality_score = sum(quality_factors.values()) / len(quality_factors) * 100
     
-    metrics["Quality Score"] = f"{quality_score}%"
+    metrics = {
+        "Word Count": word_count,
+        "Weekly Sections": weekly_sections,
+        "Milestones": milestones,
+        "Red Flags": red_flags,
+        "Coaching Notes": coaching_notes,
+        "Learning Objectives": learning_objectives,
+        "Quality Score": f"{quality_score:.0f}%",
+        "Quality Factors": quality_factors
+    }
+    
     return metrics
 
 # --- Main Form ---
@@ -314,45 +338,63 @@ Context:
 
 Style Requirements: {style_instructions[plan_style]}
 
-Instructions:
-1. Assume this is a B2B company in the {company_stage} stage with {company_size} employees.
-2. Make realistic assumptions about their likely tech stack based on company stage, then reference specific tools by name in the plan:
-   - Seed/Series A: Assume HubSpot (CRM), Pylon (Support), Slack (Communication), Notion (Documentation), Mixpanel (Analytics)
-   - Series B/Growth: Assume Salesforce (CRM), Zendesk (Support), Gong/Chorus (Sales), Gainsight (CS), Outreach (Sales Engagement)
-   - Enterprise: Assume Salesforce + advanced modules, ServiceNow (Support), Microsoft Teams, Confluence, Tableau/PowerBI (Analytics)
-   - Reference these tools specifically throughout the onboarding plan as if the employee will actually use them
+CRITICAL INSTRUCTIONS - Follow these exactly:
 
-3. Generate a comprehensive 30/60/90-day onboarding plan with 3 DISTINCT phases that build progressively:
+1. COMPANY CONTEXT: This is a B2B {company_stage} stage company with {company_size} employees.
 
-**PHASE 1 (Days 1-30): Foundation & Learning**
-Focus: Core knowledge, system access, basic processes, shadowing
-Weeks 1-4 with completely unique content each week
+2. TECH STACK ASSUMPTIONS (reference these specific tools by name):
+   - Seed/Series A: HubSpot CRM, Pylon support platform, Slack communication, Notion documentation, Mixpanel analytics
+   - Series B/Growth: Salesforce CRM, Zendesk support, Gong/Chorus sales intelligence, Gainsight customer success, Outreach sales engagement
+   - Enterprise: Salesforce + Revenue Cloud, ServiceNow support, Microsoft Teams, Confluence documentation, Tableau/PowerBI analytics
 
-**PHASE 2 (Days 31-60): Application & Skill Building** 
-Focus: Independent work, advanced training, relationship building, process improvement
-Weeks 5-8 with completely unique content each week that builds on Phase 1
+3. MANDATORY STRUCTURE - Generate exactly 12 weeks across 3 phases:
 
-**PHASE 3 (Days 61-90): Ownership & Strategic Impact**
-Focus: Full autonomy, strategic projects, mentoring others, innovation
-Weeks 9-12 with completely unique content each week that demonstrates mastery
+**PHASE 1 (WEEKS 1-4): Foundation & Learning**
+- Week 1: Company orientation, basic system access, team introductions
+- Week 2: Product/service deep dive, customer personas, competitive landscape
+- Week 3: Core processes training, tool proficiency building
+- Week 4: Shadowing experienced team members, first supervised tasks
 
-4. CRITICAL: Each phase must have fundamentally different objectives and complexity levels. Phase 2 cannot just repeat Phase 1 concepts. Phase 3 must show advanced competency and leadership.
+**PHASE 2 (WEEKS 5-8): Application & Skill Building**
+- Week 5: Independent task execution with guidance
+- Week 6: Cross-functional collaboration, stakeholder meetings
+- Week 7: Process improvement identification, advanced tool usage
+- Week 8: Customer/client interaction (if applicable), feedback integration
 
-5. For each week (all 12 weeks), include unique, specific content:
-   - 📚 Learning objectives (2-3 specific goals unique to that week)
-   - ✅ Milestone checklist (3-4 measurable outcomes specific to that week)
-   - 🚩 Red flag indicator (one key warning sign if milestone isn't met)
-   - 🧭 Coaching notes for the manager (specific guidance for that week)
+**PHASE 3 (WEEKS 9-12): Ownership & Strategic Impact**
+- Week 9: Full ownership of responsibilities, mentoring newer hires
+- Week 10: Strategic project leadership, data-driven insights
+- Week 11: Process optimization, knowledge sharing initiatives
+- Week 12: Performance review, goal setting for next quarter
 
-6. Ensure progression: Week 1 should be basic orientation, Week 6 should show growing independence, Week 12 should demonstrate strategic thinking and leadership.
+4. WEEKLY FORMAT (required for each of 12 weeks):
+   - 📚 **Learning Objectives** (2-3 specific, measurable goals)
+   - ✅ **Milestone Checklist** (3-4 concrete deliverables/outcomes)
+   - 🚩 **Red Flag** (1 clear warning sign if behind schedule)
+   - 🧭 **Manager Coaching Notes** (specific guidance for 1:1s)
 
-Start with a 2-paragraph executive summary explaining the onboarding philosophy and how each phase builds toward full competency.
+5. ROLE-SPECIFIC ADAPTATIONS:
+   - Customer Success: Focus on account management, retention metrics, customer health
+   - Sales: Emphasize pipeline building, deal qualification, CRM proficiency
+   - Revenue Operations: Prioritize data analysis, process optimization, cross-team alignment
+   - Support: Stress ticket resolution, customer satisfaction, escalation procedures
 
-Adjust pacing appropriately:
-- Smaller companies (<100): Faster ramp, broader responsibilities, less formal structure
-- Larger companies (500+): More structured immersion, specialized focus, formal processes
+6. COMPANY SIZE CONSIDERATIONS:
+   - Small companies (1-100): Broader responsibilities, informal processes, direct customer contact
+   - Large companies (500+): Specialized focus, formal procedures, compliance training
 
-Use markdown formatting throughout. Make the plan immediately actionable with NO repetitive content between phases.
+7. QUALITY REQUIREMENTS:
+   - Each week must have unique content (no repetition between weeks)
+   - Progressive complexity from basic (Week 1) to advanced (Week 12)
+   - Specific tool training integrated throughout
+   - Measurable outcomes with clear success criteria
+   - Manager guidance that addresses common onboarding challenges
+
+8. EXECUTIVE SUMMARY: Start with 2 paragraphs explaining:
+   - The onboarding philosophy for this specific role/company combination
+   - How each phase builds capability and confidence toward full productivity
+
+Make this plan immediately actionable with specific tasks, tools, and timelines. No generic advice - everything should be contextual to the role, company stage, and priorities provided.
 """
 
                 # API call with timeout and retry logic
@@ -370,10 +412,14 @@ Use markdown formatting throughout. Make the plan immediately actionable with NO
                 output = response.choices[0].message.content
                 
                 # Validate output quality before displaying
-                if not output or len(output.strip()) < 500:
+                if not output or len(output.strip()) < 1000:
                     st.error("⚠️ Generated plan seems too short. Please try again or adjust parameters.")
-                elif "Week" not in output:
-                    st.error("⚠️ Generated plan missing weekly structure. Please try again.")
+                elif output.count("Week") < 8:
+                    st.error("⚠️ Generated plan missing sufficient weekly structure. Please try again.")
+                elif not any(tool in output for tool in ['Salesforce', 'HubSpot', 'Slack', 'Notion', 'Zendesk', 'Gainsight', 'Teams']):
+                    st.warning("⚠️ Plan may be missing specific tool references. Consider regenerating for more detailed guidance.")
+                    st.markdown("### 🧾 Your AI-Generated 30/60/90-Day Onboarding Plan")
+                    st.markdown(output)
                 else:
                     # Display the plan
                     st.markdown("### 🧾 Your AI-Generated 30/60/90-Day Onboarding Plan")
@@ -383,13 +429,36 @@ Use markdown formatting throughout. Make the plan immediately actionable with NO
                     with st.expander("📊 Plan Quality Analysis"):
                         metrics = analyze_plan_quality(output)
                         if metrics:
+                            # Main metrics
                             col1, col2, col3, col4, col5, col6 = st.columns(6)
-                            with col1: st.metric("Word Count", metrics["Total Length"])
-                            with col2: st.metric("Milestones", metrics["Milestones"])  
-                            with col3: st.metric("Red Flags", metrics["Red Flags"])
-                            with col4: st.metric("Coaching Notes", metrics["Coaching Notes"])
-                            with col5: st.metric("Weekly Sections", metrics["Weekly Sections"])
+                            with col1: st.metric("Word Count", metrics["Word Count"])
+                            with col2: st.metric("Weekly Sections", metrics["Weekly Sections"])
+                            with col3: st.metric("Milestones", metrics["Milestones"])  
+                            with col4: st.metric("Red Flags", metrics["Red Flags"])
+                            with col5: st.metric("Coaching Notes", metrics["Coaching Notes"])
                             with col6: st.metric("Quality Score", metrics["Quality Score"])
+                            
+                            # Quality factors breakdown
+                            st.subheader("Quality Checklist")
+                            for factor, passed in metrics["Quality Factors"].items():
+                                status = "✅" if passed else "❌"
+                                st.write(f"{status} {factor}")
+                    
+                    # Content structure analysis
+                    with st.expander("📋 Content Structure Analysis"):
+                        phases = re.findall(r'(Phase \d+|PHASE \d+).*?(?=Phase \d+|PHASE \d+|$)', output, re.DOTALL | re.IGNORECASE)
+                        st.write(f"**Phases Detected**: {len(phases)}")
+                        
+                        weeks_by_phase = []
+                        for i, phase in enumerate(phases[:3]):  # Max 3 phases
+                            week_count = len(re.findall(r'Week \d+', phase, re.IGNORECASE))
+                            weeks_by_phase.append(week_count)
+                            st.write(f"- Phase {i+1}: {week_count} weeks")
+                        
+                        if len(weeks_by_phase) == 3 and all(w >= 3 for w in weeks_by_phase):
+                            st.success("✅ Well-balanced phase distribution")
+                        else:
+                            st.warning("⚠️ Uneven phase distribution detected")
                     
                     # Export options
                     st.subheader("📤 Export Options")
